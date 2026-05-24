@@ -1,3 +1,3 @@
-module github.com/yourname/log-system/api-server
+module github.com/SonBestCodeVien5/log-system/api-server
 
 go 1.22

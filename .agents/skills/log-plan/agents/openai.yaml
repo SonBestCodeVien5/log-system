@@ -1,0 +1,4 @@
+interface:
+  display_name: "Log Plan"
+  short_description: "Plan log-system features."
+  default_prompt: "Use this skill to plan a log-system feature using repo AGENTS.md rules and phase context."

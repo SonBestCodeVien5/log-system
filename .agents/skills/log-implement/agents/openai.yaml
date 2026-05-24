@@ -1,0 +1,4 @@
+interface:
+  display_name: "Log Implement"
+  short_description: "Implement log-system features."
+  default_prompt: "Use this skill to implement a log-system feature with focused validation."

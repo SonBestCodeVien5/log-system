@@ -1,0 +1,4 @@
+interface:
+  display_name: "Log Docs"
+  short_description: "Prepare report-ready docs."
+  default_prompt: "Use this skill to update log-system docs, report notes, technical decisions, and testing evidence from feature context."

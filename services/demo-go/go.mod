@@ -1,3 +1,3 @@
-module github.com/yourname/log-system/demo-go
+module github.com/SonBestCodeVien5/log-system/demo-go
 
 go 1.22

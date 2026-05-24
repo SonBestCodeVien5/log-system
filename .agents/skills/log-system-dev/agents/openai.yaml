@@ -1,0 +1,4 @@
+interface:
+  display_name: "Log System Dev"
+  short_description: "Log-system project workflows and context."
+  default_prompt: "Use this skill to develop, debug, review, or plan a log-system feature using the repo AGENTS.md rules and phase references."

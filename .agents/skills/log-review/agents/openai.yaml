@@ -1,0 +1,4 @@
+interface:
+  display_name: "Log Review"
+  short_description: "Review log-system changes."
+  default_prompt: "Use this skill to review log-system changes for bugs, broken contracts, and missing tests."

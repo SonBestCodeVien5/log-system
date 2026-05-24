@@ -1,0 +1,4 @@
+interface:
+  display_name: "Log Git"
+  short_description: "Prepare log-system Git handoff."
+  default_prompt: "Use this skill after review to inspect Git status, prepare staging, commit when explicitly requested, and write Git handoff context."

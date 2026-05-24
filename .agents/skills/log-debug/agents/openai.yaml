@@ -1,0 +1,4 @@
+interface:
+  display_name: "Log Debug"
+  short_description: "Debug log-system failures."
+  default_prompt: "Use this skill to debug a log-system runtime, pipeline, API, alerting, or dashboard failure."
