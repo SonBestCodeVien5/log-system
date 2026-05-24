@@ -1,0 +1,9 @@
+{
+  "name": "demo-node",
+  "version": "1.0.0",
+  "description": "Demo service sinh log",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  }
+}
