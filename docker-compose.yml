@@ -1,0 +1,186 @@
+version: "3.8"
+
+# ================================================================
+# WSL + Docker notes:
+# - Dùng host.docker.internal thay localhost khi cần gọi từ ngoài
+# - vm.max_map_count cần set trong WSL trước khi chạy ES
+#   sudo sysctl -w vm.max_map_count=262144
+# ================================================================
+
+services:
+
+  # --------------------------------------------------------------
+  # ELASTICSEARCH
+  # --------------------------------------------------------------
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ES_VERSION:-8.13.0}
+    container_name: log-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=true
+      - xpack.security.http.ssl.enabled=false
+      - ELASTIC_PASSWORD=${ES_PASSWORD:-changeme123}
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - bootstrap.memory_lock=false
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+      - ./elasticsearch/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
+    ports:
+      - "${ES_PORT:-9200}:9200"
+    networks:
+      - log-network
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - |
+          curl -s -u elastic:${ES_PASSWORD:-changeme123} \
+          http://localhost:9200/_cluster/health \
+          | grep -qE '"status":"(green|yellow)"'
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+    restart: always
+
+  # --------------------------------------------------------------
+  # LOGSTASH
+  # --------------------------------------------------------------
+  logstash:
+    image: docker.elastic.co/logstash/logstash:${ES_VERSION:-8.13.0}
+    container_name: log-logstash
+    environment:
+      - LS_JAVA_OPTS=-Xms256m -Xmx256m
+      - ELASTIC_PASSWORD=${ES_PASSWORD:-changeme123}
+    volumes:
+      - ./logstash/pipeline/logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
+      - ./logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
+    ports:
+      - "${LOGSTASH_PORT:-5044}:5044"
+    networks:
+      - log-network
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - curl -s http://localhost:9600/_node/stats | grep -q "status"
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+    restart: always
+
+  # --------------------------------------------------------------
+  # FILEBEAT
+  # --------------------------------------------------------------
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:${ES_VERSION:-8.13.0}
+    container_name: log-filebeat
+    user: root
+    volumes:
+      - ./filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - ./logs:/var/log/services:ro
+      - filebeat_data:/usr/share/filebeat/data
+    networks:
+      - log-network
+    depends_on:
+      logstash:
+        condition: service_healthy
+    command: filebeat -e -strict.perms=false
+    restart: always
+
+  # --------------------------------------------------------------
+  # DEMO SERVICE — Node.js
+  # --------------------------------------------------------------
+  demo-node:
+    build:
+      context: ./services/demo-node
+      dockerfile: Dockerfile
+    container_name: log-demo-node
+    volumes:
+      - ./logs/demo-node:/var/log/app
+    environment:
+      - SERVICE_NAME=demo-node
+      - LOG_FILE=/var/log/app/app.log
+      - LOG_INTERVAL_MS=2000
+    networks:
+      - log-network
+    restart: always
+
+  # --------------------------------------------------------------
+  # DEMO SERVICE — Go
+  # --------------------------------------------------------------
+  demo-go:
+    build:
+      context: ./services/demo-go
+      dockerfile: Dockerfile
+    container_name: log-demo-go
+    volumes:
+      - ./logs/demo-go:/var/log/app
+    environment:
+      - SERVICE_NAME=demo-go
+      - LOG_FILE=/var/log/app/app.log
+      - LOG_INTERVAL_MS=1500
+    networks:
+      - log-network
+    restart: always
+
+  # --------------------------------------------------------------
+  # GO API SERVER
+  # --------------------------------------------------------------
+  api-server:
+    build:
+      context: ./api-server
+      dockerfile: Dockerfile
+    container_name: log-api-server
+    environment:
+      - ES_HOST=elasticsearch
+      - ES_PORT=${ES_PORT:-9200}
+      - ES_PASSWORD=${ES_PASSWORD:-changeme123}
+      - API_PORT=${API_PORT:-8080}
+      - ALERT_THRESHOLD=${ALERT_THRESHOLD:-10}
+      - ALERT_WINDOW_SECONDS=${ALERT_WINDOW_SECONDS:-300}
+      - ALERT_COOLDOWN_SECONDS=${ALERT_COOLDOWN_SECONDS:-60}
+      - ALERT_CHECK_INTERVAL_SECONDS=${ALERT_CHECK_INTERVAL_SECONDS:-10}
+    ports:
+      - "${API_PORT:-8080}:8080"
+    volumes:
+      - ./dashboard:/app/static:ro
+    networks:
+      - log-network
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - wget -qO- http://localhost:8080/api/health || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: always
+
+# ================================================================
+# VOLUMES
+# ================================================================
+volumes:
+  es_data:
+    driver: local
+  filebeat_data:
+    driver: local
+
+# ================================================================
+# NETWORKS
+# ================================================================
+networks:
+  log-network:
+    driver: bridge

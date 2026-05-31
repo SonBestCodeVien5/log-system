@@ -1,0 +1,4 @@
+cluster.name: log-cluster
+node.name: log-node-1
+network.host: 0.0.0.0
+http.port: 9200
