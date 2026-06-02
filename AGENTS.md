@@ -4,8 +4,8 @@
 Hệ thống log tập trung (Centralized Logging Platform) cho phép gom log từ nhiều service,
 tìm kiếm nhanh, lọc theo mức độ và hiển thị cảnh báo real-time khi có lỗi.
 
-**Chủ sở hữu:** SonBestCodeVien5  
-**Repo:** https://github.com/SonBestCodeVien5/log-system  
+**Chủ sở hữu:** SonBestCodeVien5
+**Repo:** https://github.com/SonBestCodeVien5/log-system
 **Trạng thái:** Đang phát triển — dự án tốt nghiệp
 
 ---
@@ -14,9 +14,9 @@ tìm kiếm nhanh, lọc theo mức độ và hiển thị cảnh báo real-time
 
 ```
 Demo Services (Node.js + Go)
-  → ghi log ra file /logs/**/*.log
+  → ghi log JSON Lines ra file /logs/**/*.log
   → Filebeat tail file, ship tới Logstash :5044
-  → Logstash Grok parse → Elasticsearch :9200
+  → Logstash codec json + Grok enrich → Elasticsearch :9200
   → Go API Server (gin) query ES
   → Dashboard (HTML/JS thuần) hiển thị log
   → Alerting Engine (goroutine) push WebSocket khi ERROR vượt ngưỡng
@@ -41,73 +41,27 @@ Demo Services (Node.js + Go)
 
 ---
 
-## Cấu trúc thư mục
+## Format Log
 
-```
-log-system/
-├── AGENTS.md                   ← file này
-├── docker-compose.yml          ← khởi động toàn bộ hệ thống
-├── .env                        ← config (không commit)
-├── .env.example                ← template config
-├── filebeat/
-│   └── filebeat.yml            ← tail log files, ship to Logstash
-├── logstash/
-│   ├── pipeline/logstash.conf  ← Grok parse, enrich, output to ES
-│   └── config/logstash.yml
-├── elasticsearch/
-│   └── config/elasticsearch.yml
-├── services/
-│   ├── demo-node/              ← Node.js service sinh log liên tục
-│   └── demo-go/                ← Go service sinh log liên tục
-├── api-server/                 ← Go + gin REST API + WebSocket
-│   ├── main.go
-│   ├── handlers/
-│   │   ├── logs.go             ← GET /api/logs
-│   │   └── alerts.go           ← WebSocket /ws/alerts
-│   ├── alerting/
-│   │   └── engine.go           ← Sliding Window + Deduplication + Dynamic Threshold
-│   └── middleware/
-│       └── cors.go
-├── dashboard/
-│   ├── index.html
-│   ├── app.js
-│   └── style.css
-└── logs/                       ← volume mount, Filebeat đọc từ đây
-    ├── demo-node/
-    └── demo-go/
+### JSON Lines — format chính (ưu tiên)
+Demo services ghi log dạng JSON Lines, mỗi dòng là 1 JSON object:
+
+```json
+{"timestamp":"2024-01-15T10:23:11Z","level":"ERROR","service":"demo-node","message":"Payment gateway timeout","metadata":{"order_id":"789","retry":2}}
+{"timestamp":"2024-01-15T10:23:12Z","level":"INFO","service":"demo-go","message":"User login successful","metadata":{"uid":"12345"}}
 ```
 
----
+Logstash dùng `codec => json` để parse — không cần Grok cho format cơ bản.
 
-## Cấu hình qua biến môi trường
-
-Mọi config đều đọc từ `.env` — **không bao giờ hardcode** giá trị vào code.
-
-```
-ES_VERSION=8.13.0
-ES_PORT=9200
-ES_PASSWORD=changeme123
-LOGSTASH_PORT=5044
-API_PORT=8080
-ALERT_THRESHOLD=10
-ALERT_WINDOW_SECONDS=300
-ALERT_COOLDOWN_SECONDS=60
-ALERT_CHECK_INTERVAL_SECONDS=10
-```
-
----
-
-## Format Log chuẩn
-
-Tất cả demo service phải ghi log theo format này để Grok parse được:
+### Grok — enrich phụ
+Sau khi parse JSON, Logstash dùng Grok để enrich thêm field từ `message`:
 
 ```
-[2024-01-15T10:23:11Z] [ERROR] [demo-node] Payment gateway timeout after 30s
-[2024-01-15T10:23:12Z] [INFO]  [demo-go]   User login successful uid=12345
-[2024-01-15T10:23:13Z] [WARN]  [demo-node] Retry attempt 2/3 for order=789
+# Ví dụ: tách error_code từ message nếu có pattern
+grok { match => { "message" => "(?:%{WORD:error_code}:)?%{GREEDYDATA:error_detail}" } }
 ```
 
-Pattern: `[timestamp] [LEVEL] [service-name] message`
+Grok lỗi parse không làm mất log — dùng `tag_on_failure => []` để bỏ qua silently.
 
 ---
 
@@ -115,31 +69,31 @@ Pattern: `[timestamp] [LEVEL] [service-name] message`
 
 **Module path:** `github.com/SonBestCodeVien5/log-system/api-server`
 
-**Error handling:** luôn return error, không panic trừ main():
+**Error handling — ưu tiên:**
 ```go
-// ĐÚNG
+// Ưu tiên: return error có context
 if err != nil {
     c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
     return
 }
-
-// SAI — không dùng
-if err != nil {
-    panic(err)
-}
 ```
 
-**Elasticsearch query:** dùng `go-elasticsearch` v8, query bằng JSON string:
+**Logging — ưu tiên trong production code:**
+```go
+// Ưu tiên dùng log.Printf trong production code
+log.Printf("[handler] query failed: %v", err)
+
+// fmt.Println chấp nhận trong debug tạm thời, dọn trước khi commit
+fmt.Println("debug:", err)
+```
+
+**Elasticsearch query:**
 ```go
 query := `{
   "query": {
     "bool": {
-      "must": [
-        { "term": { "level.keyword": "ERROR" } }
-      ],
-      "filter": {
-        "range": { "@timestamp": { "gte": "now-5m", "lte": "now" } }
-      }
+      "must": [{ "term": { "level.keyword": "ERROR" } }],
+      "filter": { "range": { "@timestamp": { "gte": "now-5m", "lte": "now" } } }
     }
   }
 }`
@@ -147,71 +101,86 @@ query := `{
 
 **Response format chuẩn:**
 ```json
-{
-  "data": [...],
-  "total": 100,
-  "page": 1,
-  "size": 20
-}
+{"data": [...], "total": 100, "page": 1, "size": 20}
 ```
 
-**Alerting engine** chạy trong goroutine riêng, dùng `sync.RWMutex` cho shared state:
-- Sliding Window: quét lùi `ALERT_WINDOW_SECONDS` giây mỗi `ALERT_CHECK_INTERVAL_SECONDS` giây
-- Deduplication: không bắn alert trùng trong vòng `ALERT_COOLDOWN_SECONDS` giây
-- Dynamic Threshold: nhận config mới qua WebSocket message từ dashboard
+---
+
+## AlertEngine — Conventions
+
+AlertEngine dùng single Lock (không phải RLock/Lock tách biệt) cho `shouldAlert`
+để đảm bảo check và ghi là atomic, tránh double alert:
+
+```go
+// ĐÚNG — atomic check + write
+func (e *AlertEngine) shouldAlert(key string) bool {
+    e.mu.Lock()
+    defer e.mu.Unlock()
+
+    lastSent, exists := e.sent[key]
+    if exists && time.Since(lastSent) < e.cooldown {
+        return false
+    }
+    e.sent[key] = time.Now()
+    return true
+}
+
+// SAI — race condition tiềm ẩn
+func (e *AlertEngine) shouldAlert(key string) bool {
+    e.mu.RLock()
+    _, exists := e.sent[key]  // goroutine A và B đều đọc "chưa có"
+    e.mu.RUnlock()
+    // cả 2 goroutine cùng pass → double alert
+    e.mu.Lock()
+    e.sent[key] = time.Now()
+    e.mu.Unlock()
+    return true
+}
+```
 
 ---
 
 ## Dashboard — Conventions
 
-- **Không dùng framework** (không React, không Vue) — HTML + Vanilla JS thuần
+- Không dùng framework — HTML + Vanilla JS thuần
 - Gọi API bằng `fetch()`
-- Nhận alert qua `WebSocket`
-- CSS tự viết, không dùng Tailwind hay Bootstrap
+- Nhận alert qua WebSocket
+- Pagination 20 record/trang — không load toàn bộ log một lúc
 - Tất cả trong 3 file: `index.html`, `app.js`, `style.css`
 
 ---
 
-## Docker Compose — Conventions
+## Rules cứng — không vi phạm
 
-- Mọi service đều có `restart: always`
-- Mọi service đều có `healthcheck`
-- ES và Logstash phải healthy trước khi Filebeat và API start (`depends_on: condition: service_healthy`)
-- Network: tất cả trong cùng network `log-network`
-- Volume logs mount từ `./logs` vào container
+- Không commit file `.env`
+- Không hardcode password, port vào code — dùng `os.Getenv()`
+- Không bỏ qua error trong Go mà không xử lý hoặc log
 
----
+## Conventions — ưu tiên tuân theo
 
-## Quy tắc KHÔNG được làm
-
-- **Không hardcode** password, port, hostname vào code — dùng `os.Getenv()`
-- **Không commit** file `.env`
-- **Không dùng** `fmt.Println` trong Go API — dùng `log.Printf`
-- **Không bỏ qua** error trong Go — luôn check và handle
-- **Không thêm** dependency mới vào Go mà không cập nhật `go.mod`
-- **Không đổi** format log của demo services — Grok pattern phụ thuộc vào format này
+- Dùng `log.Printf` thay `fmt.Println` trong production code
+- Không thêm dependency mới vào Go mà không cập nhật `go.mod`
+- Không đổi format log JSON của demo services khi Logstash đã config xong
 
 ---
 
 ## Chạy và test
 
 ```bash
-# Khởi động toàn bộ hệ thống
+# Khởi động
 docker compose up -d
 
-# Kiểm tra ES đã sẵn sàng
+# Kiểm tra ES
 curl http://localhost:9200/_cluster/health
 
-# Xem log của từng service
-docker compose logs -f logstash
-docker compose logs -f filebeat
-
-# Chạy Go API local (development)
-cd api-server
-go run main.go
-
-# Kiểm tra log đã vào ES chưa
+# Kiểm tra log đã vào ES
 curl "http://localhost:9200/logs-*/_count"
+
+# API health check
+curl http://localhost:8080/api/health
+
+# Dev mode Go API
+cd api-server && go run main.go
 ```
 
 ---
@@ -220,18 +189,8 @@ curl "http://localhost:9200/logs-*/_count"
 
 | Method | Path | Mô tả |
 |---|---|---|
-| GET | `/api/logs` | Lấy danh sách log, filter theo level/app/time |
-| GET | `/api/logs/count` | Đếm log theo level trong khoảng thời gian |
+| GET | `/api/logs` | Danh sách log, filter level/app/time/search |
+| GET | `/api/logs/count` | Đếm log theo level |
 | GET | `/api/health` | Health check |
 | WebSocket | `/ws/alerts` | Real-time alert stream |
-| POST | `/api/alerts/config` | Cập nhật ngưỡng alert động |
-
-**Query params cho `/api/logs`:**
-```
-?level=ERROR
-?app=demo-node
-?from=2024-01-15T10:00:00Z
-?to=2024-01-15T11:00:00Z
-?q=payment+timeout        ← full-text search
-?page=1&size=20
-```
+| POST | `/api/alerts/config` | Cập nhật threshold động |

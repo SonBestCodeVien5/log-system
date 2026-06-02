@@ -5,53 +5,79 @@
 Hệ thống log tập trung (Centralized Logging Platform) gom log từ nhiều service,
 parse và lưu vào Elasticsearch, cung cấp dashboard tìm kiếm và alerting real-time.
 
+---
+
 ## Luồng dữ liệu
 
 ```
 [Services]
-  demo-node (Node.js)  -->  /logs/demo-node/app.log
-  demo-go   (Go)       -->  /logs/demo-go/app.log
+  demo-node (Node.js)  -->  /logs/demo-node/app.log  (JSON Lines)
+  demo-go   (Go)       -->  /logs/demo-go/app.log    (JSON Lines)
        |
        v
-[Filebeat :5044]
+[Filebeat]
   - Tail log files
-  - Buffer khi Logstash down
-  - Registry: nhớ đã đọc đến đâu
+  - Buffer khi Logstash down (registry)
+  - Ship tới Logstash :5044
        |
        v
 [Logstash]
   Input:  beats (port 5044)
-  Filter: Grok parse text --> JSON có cấu trúc
-  Output: Elasticsearch
+  Filter: codec json parse → Grok enrich thêm field
+  Output: Elasticsearch index logs-YYYY.MM.DD
        |
        v
 [Elasticsearch :9200]
-  Index: logs-YYYY.MM.DD
-  ILM:   giữ 30 ngày
+  Lưu trữ JSON document
+  Index theo ngày
        |
        +-----------> [Go API Server :8080]
-       |                  GET  /api/logs
-       |                  GET  /api/logs/count
-       |                  GET  /api/health
-       |                  POST /api/alerts/config
-       |                  WS   /ws/alerts
        |
-       +-----------> [Alerting Engine - goroutine]
-                          Sliding Window 5 phút
-                          Deduplication 60s cooldown
-                          Dynamic Threshold
-                               |
-                               v WebSocket
-                     [Dashboard :8080]
-                          Bảng log + filter
-                          Alert banner
+       +-----------> [Alerting Engine goroutine]
+                          |
+                          v WebSocket
+                     [Dashboard]
 ```
+
+---
+
+## Format Log
+
+### JSON Lines — format chính
+
+Demo services ghi mỗi dòng là 1 JSON object hoàn chỉnh:
+
+```json
+{"timestamp":"2024-01-15T10:23:11Z","level":"ERROR","service":"demo-node","message":"Payment gateway timeout","metadata":{"order_id":"789"}}
+```
+
+**Tại sao JSON Lines thay vì text thô:**
+- Logstash chỉ cần `codec => json`, không phụ thuộc Grok để parse format cơ bản
+- Ít lỗi parse hơn — JSON sai format dễ debug hơn Grok pattern sai
+- Phản ánh thực tế production — các logger hiện đại (Winston, Zap, zerolog) đều output JSON
+
+### Grok — enrich phụ
+
+Sau khi parse JSON, Logstash dùng Grok để enrich thêm field từ `message`:
+
+```
+filter {
+  # parse JSON trước
+  # Grok enrich thêm nếu message có pattern đặc biệt
+  grok {
+    match => { "message" => "(?:%{WORD:error_code}:)?%{GREEDYDATA:error_detail}" }
+    tag_on_failure => []  # bỏ qua silently nếu không match
+  }
+}
+```
+
+Grok lỗi không làm mất log — `tag_on_failure => []` đảm bảo log vẫn vào ES.
+
+---
 
 ## Các tầng hệ thống
 
 ### Tầng 1 — Demo Services
-
-Sinh log liên tục để test pipeline. Không phải nghiệp vụ thật.
 
 | Service | Công nghệ | Output |
 |---|---|---|
@@ -60,75 +86,108 @@ Sinh log liên tục để test pipeline. Không phải nghiệp vụ thật.
 
 Tỉ lệ log: INFO 60% — WARN 25% — ERROR 15%
 
-**Format log bắt buộc:**
-```
-[2024-01-15T10:23:11Z] [ERROR] [demo-node] Payment gateway timeout after 30s
-[2024-01-15T10:23:12Z] [INFO]  [demo-go]   User login successful uid=12345
-[2024-01-15T10:23:13Z] [WARN]  [demo-node] Retry attempt 2/3 for order=789
-```
-
 ### Tầng 2 — Filebeat
 
-Agent nhẹ chạy trên từng server, tail log file và ship tới Logstash.
+Agent nhẹ tail log file và ship tới Logstash. Có registry — không mất log khi restart.
 
-**Tại sao không ship thẳng vào Logstash từ app?**
-- Filebeat có registry — nhớ đã đọc đến dòng nào, không mất log khi Logstash tạm down
-- Footprint nhỏ (~50MB) so với Logstash (~500MB), không nặng server
+**Tại sao không ship thẳng từ app:**
+Filebeat footprint nhỏ (~50MB), chạy được trên mọi server.
+Tách concern: app chỉ ghi file, Filebeat lo shipping.
 
 ### Tầng 3 — Logstash
 
-Parse log text thô thành JSON có cấu trúc bằng Grok pattern.
+Parse và enrich log trước khi lưu vào ES.
 
 ```
-Input raw:   "[2024-01-15T10:23:11Z] [ERROR] [demo-node] Payment failed"
-Output JSON: {
+Input raw JSON:  {"level":"ERROR","message":"Payment failed","service":"demo-node"}
+Output enriched: {
+  "level":     "ERROR",
+  "service":   "demo-node",
+  "message":   "Payment failed",
   "@timestamp": "2024-01-15T10:23:11Z",
-  "level":      "ERROR",
-  "service":    "demo-node",
-  "message":    "Payment failed"
+  "error_code": "Payment",       ← thêm bởi Grok enrich
+  "host":       "log-node-1"     ← thêm bởi Logstash
 }
 ```
 
 ### Tầng 4 — Elasticsearch
 
-Lưu trữ và search log. Index theo ngày để tối ưu query và lifecycle.
+Lưu trữ log dạng JSON document, index theo ngày.
 
-**Tại sao không dùng MySQL/PostgreSQL?**
+**Tại sao không dùng MySQL/PostgreSQL:**
 
 | Tiêu chí | Elasticsearch | MySQL |
 |---|---|---|
 | Index type | Inverted index | B-tree |
-| Full-text search | Tự nhiên, rất nhanh | Chậm, cần LIKE |
-| Time-range query | `now-5m` built-in | Tính timestamp thủ công |
-| Scale | Horizontal dễ | Vertical tốn kém |
+| Full-text search | Tự nhiên, nhanh | LIKE query, chậm |
+| Time-range | `now-5m` built-in | Tính timestamp thủ công |
 
 ### Tầng 5 — Go API Server
 
-REST API + WebSocket viết bằng Go + gin, trung gian giữa ES và Dashboard.
+REST API + WebSocket, trung gian giữa ES và Dashboard.
 
-**Tại sao Go thay vì Spring Boot Java (yêu cầu gốc):**
+**Tại sao Go thay vì Spring Boot:**
 - Docker, Kubernetes, Prometheus, Filebeat đều viết bằng Go — đúng domain
-- Goroutine native phù hợp với alerting engine concurrent
+- Goroutine native phù hợp alerting concurrent
 - RAM 20–50MB so với Spring 300–500MB
-- Code tường minh, không có annotation magic
+
+---
 
 ## Alerting Engine
 
 ### Sliding Window
-Quét mỗi 10 giây, nhìn lùi 5 phút — không bỏ sót spike lỗi ngắn.
+Quét mỗi `ALERT_CHECK_INTERVAL_SECONDS` giây (mặc định 10s),
+nhìn lùi `ALERT_WINDOW_SECONDS` giây (mặc định 300s = 5 phút).
 
 ```
-t=0s:  đếm ERROR trong [t-300s, t] = 3  --> bình thường
-t=10s: đếm ERROR trong [t-300s, t] = 15 --> ALERT!
-t=20s: đếm ERROR trong [t-300s, t] = 14 --> dedup, không bắn lại
+t=0s:  đếm ERROR [t-300s, t] = 3  → bình thường
+t=10s: đếm ERROR [t-300s, t] = 15 → vượt threshold → ALERT
+t=20s: đếm ERROR [t-300s, t] = 14 → trong cooldown → bỏ qua
 ```
+
+Độ trễ phát hiện tối đa = `ALERT_CHECK_INTERVAL_SECONDS`.
+Mặc định 10s, có thể điều chỉnh qua `.env`.
 
 ### Alert Deduplication
-Không gửi alert trùng trong cooldown period — tránh Alert Fatigue.
+
+Tránh Alert Fatigue — không gửi alert trùng trong cooldown period.
+
+**Lưu ý implementation:** `shouldAlert` dùng single `Lock` (không tách RLock/Lock)
+để đảm bảo check và ghi là atomic, tránh race condition double alert:
+
+```go
+func (e *AlertEngine) shouldAlert(key string) bool {
+    e.mu.Lock()
+    defer e.mu.Unlock()
+    lastSent, exists := e.sent[key]
+    if exists && time.Since(lastSent) < e.cooldown {
+        return false
+    }
+    e.sent[key] = time.Now()
+    return true
+}
+```
 
 ### Dynamic Threshold
-Dashboard gửi ngưỡng mới về API, goroutine alerting cập nhật ngay không cần restart.
-Dùng `sync.RWMutex` để đảm bảo an toàn khi 2 goroutine đọc/ghi đồng thời.
+
+Dashboard gửi ngưỡng mới về API, goroutine cập nhật ngay không restart.
+Dùng `sync.RWMutex` riêng cho threshold — tách biệt với mutex của dedup map.
+
+---
+
+## Hiệu năng — kỳ vọng và cơ chế đảm bảo
+
+Thay vì cam kết con số tuyệt đối, hệ thống thiết kế theo các cơ chế sau.
+Con số thực tế sẽ được đo và ghi nhận sau khi hoàn thành tích hợp.
+
+| Mục tiêu | Cơ chế đảm bảo | Ghi chú |
+|---|---|---|
+| Query log nhanh | ES inverted index + index theo ngày | Đo trên môi trường dev sau tuần 2 |
+| Dashboard không chậm theo data | Pagination 20 record/trang, lazy load | Không load toàn bộ log một lúc |
+| Alerting phát hiện kịp thời | Check interval = 10s (configurable) | Độ trễ tối đa = interval value |
+| Không mất log khi restart | Filebeat registry | Tiếp tục từ điểm dừng |
+
+---
 
 ## Cấu trúc thư mục
 
@@ -138,25 +197,15 @@ log-system/
 ├── docker-compose.yml
 ├── .env / .env.example
 ├── filebeat/filebeat.yml
-├── logstash/
-│   ├── pipeline/logstash.conf
-│   └── config/logstash.yml
+├── logstash/pipeline/logstash.conf
 ├── elasticsearch/config/elasticsearch.yml
-├── services/
-│   ├── demo-node/index.js
-│   └── demo-go/main.go
+├── services/demo-node/  demo-go/
 ├── api-server/
 │   ├── main.go
-│   ├── handlers/logs.go
-│   ├── handlers/alerts.go
+│   ├── handlers/logs.go  alerts.go
 │   ├── alerting/engine.go
 │   └── middleware/cors.go
-├── dashboard/
-│   ├── index.html
-│   ├── app.js
-│   └── style.css
-├── logs/
-│   ├── demo-node/
-│   └── demo-go/
+├── dashboard/index.html  app.js  style.css
+├── logs/demo-node/  demo-go/
 └── docs/
 ```
