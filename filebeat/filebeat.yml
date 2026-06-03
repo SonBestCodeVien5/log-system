@@ -1,0 +1,77 @@
+# =================================================================
+# FILEBEAT CONFIG — log-system
+# Tail log files từ demo services, ship tới Logstash
+# =================================================================
+
+# ---------------------------------------------------------------
+# INPUTS — đọc log files
+# ---------------------------------------------------------------
+filebeat.inputs:
+
+  - type: log
+    enabled: true
+
+    # Đường dẫn trong container — map từ ./logs/ local
+    paths:
+      - /var/log/services/demo-node/*.log
+      - /var/log/services/demo-go/*.log
+
+    # Thêm field để phân biệt nguồn log
+    fields:
+      log_source: "file"
+    fields_under_root: true
+
+    # Multiline — gộp stack trace thành 1 event
+    # Stack trace thường bắt đầu bằng khoảng trắng hoặc "at "
+    multiline.type:    pattern
+    multiline.pattern: '^\s|^at |^Caused by:'
+    multiline.negate:  false
+    multiline.match:   after
+    multiline.max_lines: 50
+
+    # Encoding
+    encoding: utf-8
+
+    # Scan file mới mỗi 5 giây
+    scan_frequency: 5s
+
+    # Đọc file từ đầu lần đầu tiên
+    tail_files: false
+
+    # Giữ file handle tối đa
+    close_inactive: 5m
+
+# ---------------------------------------------------------------
+# OUTPUT — gửi tới Logstash
+# Dùng tên service "logstash" trong docker network, không phải localhost
+# ---------------------------------------------------------------
+output.logstash:
+  hosts: ["logstash:5044"]
+
+  # Retry khi Logstash tạm down
+  max_retries: 3
+  backoff.init: 1s
+  backoff.max:  60s
+
+# ---------------------------------------------------------------
+# LOGGING — log của chính Filebeat
+# ---------------------------------------------------------------
+logging.level: info
+logging.to_files: false
+logging.to_stderr: true
+
+# ---------------------------------------------------------------
+# REGISTRY — lưu vị trí đã đọc đến
+# Filebeat nhớ đã đọc đến dòng nào trong mỗi file
+# Khi restart: tiếp tục từ điểm dừng, không mất log
+# ---------------------------------------------------------------
+filebeat.registry.path: /usr/share/filebeat/data/registry
+
+# ---------------------------------------------------------------
+# QUEUE — buffer trong memory
+# Giữ tối đa 1000 event nếu Logstash chậm
+# ---------------------------------------------------------------
+queue.mem:
+  events: 1000
+  flush.min_events: 100
+  flush.timeout:    5s
