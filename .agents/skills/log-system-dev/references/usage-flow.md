@@ -23,6 +23,7 @@ Use two different locations:
 - `.agents/GUIDE.md`: human-facing guide for folder roles, skill roles, and phase flow.
 - `.agents/skills/`: stable instructions that should apply to every future session.
 - `.agents/context/`: temporary or feature-specific working context that should carry one feature across phases.
+- `agent-context/`: writable mirror for feature context when `.agents/context` is read-only in a Codex session.
 
 Do not put feature-specific investigation notes into `SKILL.md`; that makes the skill stale and noisy.
 
@@ -32,6 +33,12 @@ For every non-trivial feature, create:
 
 ```text
 .agents/context/features/<feature-slug>/
+```
+
+If `.agents/context` is read-only, create the same folder under:
+
+```text
+agent-context/features/<feature-slug>/
 ```
 
 Inside it, use these phase files:
@@ -50,7 +57,7 @@ Use short slugs such as `api-logs-count`, `dashboard-alert-banner`, or `pipeline
 
 This context creation is mandatory by default for `$log-plan`. Skip it only when the user explicitly says not to persist context.
 
-If the active collaboration mode or filesystem permissions forbid file writes, do not claim the context was persisted. Return the exact intended file paths and content, mark the handoff as `not persisted`, and write it when file changes are allowed.
+If `.agents/context` is read-only but `agent-context` is writable, write to `agent-context` and treat the handoff as persisted. If both locations are unavailable, do not claim the context was persisted. Return the exact intended file paths and content, mark the handoff as `not persisted`, and write it when file changes are allowed.
 
 ## Phase Flow
 
@@ -62,7 +69,7 @@ If the active collaboration mode or filesystem permissions forbid file writes, d
 6. Git: record status, staging intent, commit message or hash, and remaining working tree state.
 7. Docs: update report notes, decisions, testing evidence, and public docs while feature context is fresh.
 
-Use `.agents/context/templates/` for the exact headings of each phase file.
+Use `.agents/context/templates/` for the exact headings of each phase file when readable. If unavailable, mirror the same headings from existing files under `agent-context`.
 
 At the end of each phase, append a `Next Handoff` section with:
 
@@ -109,4 +116,4 @@ Then switch to `$log-debug` if the blocker is technical, or `$log-plan` if the b
 
 ## Phase Context Parking
 
-The folders under `.agents/context/phases/` are parking areas for reusable phase notes that are not tied to one feature. Prefer `.agents/context/features/<feature-slug>/` for normal feature work.
+The folders under `.agents/context/phases/` are parking areas for reusable phase notes that are not tied to one feature. Prefer `.agents/context/features/<feature-slug>/` for normal feature work, or `agent-context/features/<feature-slug>/` when `.agents/context` is read-only.

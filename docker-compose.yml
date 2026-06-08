@@ -1,5 +1,3 @@
-version: "3.8"
-
 # ================================================================
 # WSL + Docker notes:
 # - Dùng host.docker.internal thay localhost khi cần gọi từ ngoài

@@ -18,20 +18,20 @@ Read the subsystem phase reference that matches the task:
 
 ## Required Context Input And Output
 
-Before editing, locate the active feature folder under `.agents/context/features/<feature-slug>/` and read:
+Before editing, locate the active feature folder under `.agents/context/features/<feature-slug>/` or the fallback `agent-context/features/<feature-slug>/` and read:
 
 - `01-discovery.md`
 - `02-plan.md`
 
 If no feature context exists for non-trivial work, create it first using `$log-plan` behavior or write a minimal `01-discovery.md` and `02-plan.md` before implementation.
 
-If prior plan context was returned as `not persisted`, create the missing context files before editing application code.
+If prior plan context was returned as `not persisted`, create the missing context files before editing application code. Prefer `.agents/context`; if it is read-only, use `agent-context`.
 
 After implementation, write or update:
 
 - `03-implementation.md`: changed files, behavior implemented, deviations from plan, unresolved risks, and `Next Handoff`.
 - `04-verification.md`: validation commands and results when checks are run during implementation.
 
-Use templates from `.agents/context/templates/`.
+Use templates from `.agents/context/templates/` when readable; otherwise follow the same headings from existing files under `agent-context`.
 
 Inspect current files first, preserve unrelated user changes, implement the smallest complete vertical slice, then validate with `.agents/skills/log-system-dev/references/phase-verification.md`.

@@ -68,19 +68,16 @@ func main() {
 	r.Use(gin.Recovery())
 	r.Use(middleware.CORS())
 
-	// Static files — dashboard
-	r.Static("/", "./static")
-
 	// API routes
 	api := r.Group("/api")
 	{
 		logHandler   := handlers.NewLogHandler(esClient)
 		alertHandler := handlers.NewAlertHandler(engine)
 
-		api.GET("/health",       healthCheck(esClient))
-		api.GET("/logs",         logHandler.GetLogs)
-		api.GET("/logs/count",   logHandler.CountLogs)
-		api.POST("/alerts/config", alertHandler.UpdateConfig)
+		api.GET("/health",           healthCheck(esClient))
+		api.GET("/logs",             logHandler.GetLogs)
+		api.GET("/logs/count",       logHandler.CountLogs)
+		api.POST("/alerts/config",   alertHandler.UpdateConfig)
 	}
 
 	// WebSocket
@@ -88,6 +85,13 @@ func main() {
 		handlers.NewAlertHandler(engine).HandleWS(c)
 	})
 
+	// Dashboard — serve index.html tại root
+	r.GET("/", func(c *gin.Context) {
+		c.File("./static/index.html")
+	})
+
+	// Static assets — JS, CSS
+	r.Static("/assets", "./static")
 	// ---------------------------------------------------------------
 	// HTTP Server với graceful shutdown
 	// ---------------------------------------------------------------

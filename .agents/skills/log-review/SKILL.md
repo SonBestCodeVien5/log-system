@@ -18,7 +18,7 @@ Lead with findings ordered by severity. Focus on broken contracts, hardcoded con
 
 ## Required Context Input And Output
 
-Before reviewing a non-trivial feature, read the active feature context under `.agents/context/features/<feature-slug>/`, especially:
+Before reviewing a non-trivial feature, read the active feature context under `.agents/context/features/<feature-slug>/` or fallback `agent-context/features/<feature-slug>/`, especially:
 
 - `01-discovery.md`
 - `02-plan.md`
@@ -38,6 +38,6 @@ Set `Next Handoff` to `log-git` when changes are ready for staging or commit.
 
 If review is blocked, write or update `07-blocked.md`.
 
-If writes are not permitted, return the intended `05-review.md` or `07-blocked.md` content and mark it as `not persisted`.
+If `.agents/context` is read-only, write to `agent-context/features/<feature-slug>/` instead and treat it as persisted context. If neither location is writable, return the intended `05-review.md` or `07-blocked.md` content and mark it as `not persisted`.
 
-Use templates from `.agents/context/templates/`.
+Use templates from `.agents/context/templates/` when readable; otherwise follow the same headings from existing files under `agent-context`.

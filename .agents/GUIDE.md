@@ -9,6 +9,7 @@ This folder stores Codex skills and working context for the `log-system` repo.
 - `context/features/`: one folder per active feature, for example `features/api-logs-count/`.
 - `context/phases/`: reusable phase notes that are not tied to one feature.
 - `context/archive/`: completed feature contexts after they are no longer active.
+- If `.agents/context` is read-only in a Codex session, use repo-root `agent-context/` as the writable mirror with the same phase filenames.
 
 ## Skill Roles
 
@@ -25,7 +26,7 @@ The wrapper skills intentionally reuse `$log-system-dev` as the shared baseline 
 ## Recommended Flow
 
 1. Start with `$log-plan`.
-2. `$log-plan` must create `.agents/context/features/<feature-slug>/` unless the user explicitly says not to persist context.
+2. `$log-plan` must create `.agents/context/features/<feature-slug>/` unless the user explicitly says not to persist context. If `.agents/context` is read-only, create `agent-context/features/<feature-slug>/` instead and treat it as persisted context.
 3. `$log-plan` must write `01-discovery.md` with repo facts, constraints, unknowns, and relevant files.
 4. `$log-plan` must write `02-plan.md` with the chosen implementation plan and acceptance criteria.
 5. Use `$log-implement` and record important implementation notes in `03-implementation.md`.
@@ -54,6 +55,12 @@ For every non-trivial feature, create:
 .agents/context/features/<feature-slug>/
 ```
 
+Fallback when `.agents/context` is read-only:
+
+```text
+agent-context/features/<feature-slug>/
+```
+
 Use these files inside it:
 
 ```text
@@ -66,7 +73,7 @@ Use these files inside it:
 07-blocked.md
 ```
 
-Use `.agents/context/templates/` as the field guide for each file. Copy the template headings and fill only useful, task-specific content.
+Use `.agents/context/templates/` as the field guide for each file when readable. Copy the template headings and fill only useful, task-specific content. If templates are unavailable, mirror the same headings already used under `agent-context/`.
 
 ## Phase Responsibilities
 
@@ -80,7 +87,7 @@ Use `.agents/context/templates/` as the field guide for each file. Copy the temp
 
 For trivial one-line fixes, context may be skipped only when the user explicitly says not to persist context or the change has no meaningful follow-up phase.
 
-If the active collaboration mode or permissions forbid file writes, do not claim context was persisted. Instead, include the exact intended context file paths and content in the response, mark the context as `not persisted`, and write it as soon as a later phase permits file changes.
+If `.agents/context` is read-only but `agent-context` is writable, write context to `agent-context` and treat it as persisted. If both locations are unavailable, do not claim context was persisted; include the exact intended context file paths and content in the response, mark the context as `not persisted`, and write it as soon as a later phase permits file changes.
 
 ## If A Phase Breaks
 

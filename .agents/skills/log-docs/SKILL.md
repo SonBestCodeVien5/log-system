@@ -10,7 +10,7 @@ Load shared project rules from `.agents/skills/log-system-dev/SKILL.md`, then us
 Read:
 
 - `.agents/GUIDE.md`
-- Active feature context under `.agents/context/features/<feature-slug>/`
+- Active feature context under `.agents/context/features/<feature-slug>/` or fallback `agent-context/features/<feature-slug>/`
 - `docs/architecture.md`
 - `docs/api.md`
 - `docs/deployment.md`
@@ -42,9 +42,9 @@ Write or update the relevant docs:
 - `docs/decisions.md`: technical decisions, alternatives considered, and rationale.
 - `docs/testing-evidence.md`: commands, outcomes, evidence, and unresolved test gaps.
 
-For feature-specific documentation work, also update `.agents/context/features/<feature-slug>/04-verification.md`, `05-review.md`, or `06-git.md` only when the docs work changes those handoffs.
+For feature-specific documentation work, also update `.agents/context/features/<feature-slug>/04-verification.md`, `05-review.md`, or `06-git.md` only when the docs work changes those handoffs. If `.agents/context` is read-only, update the same files under `agent-context/features/<feature-slug>/`.
 
-If writes are not permitted, return the intended file paths and content and mark them as `not persisted`.
+If neither `.agents/context` nor `agent-context` is writable for feature context, return the intended file paths and content and mark them as `not persisted`.
 
 ## Writing Rules
 

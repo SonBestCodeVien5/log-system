@@ -50,4 +50,6 @@ Use `.env` for runtime config. Do not hardcode passwords, ports, or hostnames in
 
 ## Context Handoff
 
-For feature work that spans multiple turns or phases, write handoff context under `.agents/context/features/<feature-slug>/` using the phase file names described in `.agents/GUIDE.md` and `references/usage-flow.md`. Keep stable skill instructions in `.agents/skills`; keep feature-specific discoveries, decisions, blockers, and verification notes in `.agents/context`.
+For feature work that spans multiple turns or phases, write handoff context under `.agents/context/features/<feature-slug>/` using the phase file names described in `.agents/GUIDE.md` and `references/usage-flow.md`.
+
+If `.agents/context` is read-only in the current Codex session, use the writable mirror `agent-context/features/<feature-slug>/` with the same phase filenames instead. Keep stable skill instructions in `.agents/skills`; keep feature-specific discoveries, decisions, blockers, and verification notes in `.agents/context` or the `agent-context` fallback, never in `docs/`.

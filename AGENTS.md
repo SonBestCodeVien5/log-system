@@ -148,6 +148,12 @@ func (e *AlertEngine) shouldAlert(key string) bool {
 - Pagination 20 record/trang — không load toàn bộ log một lúc
 - Tất cả trong 3 file: `index.html`, `app.js`, `style.css`
 
+## Agent Context — Conventions
+
+- Ưu tiên lưu phase context tại `.agents/context/features/<feature-slug>/`.
+- Nếu `.agents/context` bị read-only trong phiên Codex, dùng `agent-context/features/<feature-slug>/` với cùng file phase (`01-discovery.md` đến `07-blocked.md`).
+- Không lưu feature context tạm vào `docs/`; `docs/` chỉ dành cho tài liệu dự án/report.
+
 ---
 
 ## Rules cứng — không vi phạm
