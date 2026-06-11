@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Log System — Dashboard</title>
+  <link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+
+  <!-- Alert Banner -->
+  <div id="alert-banner" class="alert-banner hidden">
+    <div class="alert-inner">
+      <span class="alert-icon">⚠</span>
+      <span id="alert-text">Cảnh báo hệ thống</span>
+      <button id="alert-close" onclick="closeAlert()">✕</button>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="header-left">
+        <h1 class="logo">Log System</h1>
+        <span id="ws-status" class="ws-badge disconnected">● Disconnected</span>
+      </div>
+      <div class="header-right">
+        <label class="threshold-label">
+          Ngưỡng cảnh báo:
+          <input type="number" id="threshold-input" min="1" value="10">
+          <button onclick="updateThreshold()">Cập nhật</button>
+        </label>
+      </div>
+    </div>
+  </header>
+
+  <!-- Stats Bar -->
+  <div class="stats-bar">
+    <div class="stat-card">
+      <span class="stat-label">Tổng log</span>
+      <span class="stat-value" id="stat-total">—</span>
+    </div>
+    <div class="stat-card info">
+      <span class="stat-label">INFO</span>
+      <span class="stat-value" id="stat-info">—</span>
+    </div>
+    <div class="stat-card warn">
+      <span class="stat-label">WARN</span>
+      <span class="stat-value" id="stat-warn">—</span>
+    </div>
+    <div class="stat-card error">
+      <span class="stat-label">ERROR</span>
+      <span class="stat-value" id="stat-error">—</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Cập nhật lúc</span>
+      <span class="stat-value" id="stat-updated">—</span>
+    </div>
+  </div>
+
+  <!-- Filter Bar -->
+  <div class="filter-bar">
+    <div class="filter-group">
+      <select id="filter-level">
+        <option value="">Tất cả level</option>
+        <option value="INFO">INFO</option>
+        <option value="WARN">WARN</option>
+        <option value="ERROR">ERROR</option>
+      </select>
+
+      <select id="filter-app">
+        <option value="">Tất cả service</option>
+        <option value="demo-node">demo-node</option>
+        <option value="demo-go">demo-go</option>
+      </select>
+
+      <input type="text" id="filter-search"
+        placeholder="Tìm kiếm trong message...">
+
+      <button onclick="applyFilter()">Tìm</button>
+      <button onclick="resetFilter()" class="btn-secondary">Xóa filter</button>
+    </div>
+
+    <div class="filter-right">
+      <label class="auto-refresh-label">
+        <input type="checkbox" id="auto-refresh" checked>
+        Tự động refresh (10s)
+      </label>
+    </div>
+  </div>
+
+  <!-- Log Table -->
+  <div class="table-container">
+    <table class="log-table">
+      <thead>
+        <tr>
+          <th style="width:180px">Thời gian</th>
+          <th style="width:80px">Level</th>
+          <th style="width:120px">Service</th>
+          <th>Message</th>
+        </tr>
+      </thead>
+      <tbody id="log-tbody">
+        <tr class="loading-row">
+          <td colspan="4">Đang tải dữ liệu...</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  <div class="pagination">
+    <button onclick="prevPage()" id="btn-prev">← Trước</button>
+    <span id="page-info">Trang 1</span>
+    <button onclick="nextPage()" id="btn-next">Tiếp →</button>
+    <span id="total-info" class="total-info"></span>
+  </div>
+
+  <script src="/assets/app.js"></script>
+</body>
+</html>
