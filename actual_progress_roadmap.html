@@ -1,176 +1,669 @@
-<h2 class="sr-only">Roadmap thực tế theo bước — trạng thái hiện tại của dự án log system</h2>
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Roadmap Log System</title>
+  <style>
+    :root {
+      --bg: #f6f7f3;
+      --panel: #ffffff;
+      --ink: #1f2723;
+      --muted: #66716b;
+      --line: #dfe5dd;
+      --green: #14845f;
+      --green-soft: #def4ea;
+      --amber: #b7791f;
+      --amber-soft: #fff1cf;
+      --red: #c2412d;
+      --red-soft: #ffe1d8;
+      --teal: #0f766e;
+      --teal-soft: #d9f3ef;
+      --blue: #2563eb;
+      --blue-soft: #e4edff;
+      --shadow: 0 18px 50px rgba(31, 39, 35, 0.10);
+      --radius: 8px;
+      --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
 
-<style>
-.phase{font-size:11px;font-weight:500;padding:2px 8px;border-radius:10px;margin-left:auto}
-.p-infra{background:var(--color-background-success);color:var(--color-text-success)}
-.p-api{background:var(--color-background-info);color:var(--color-text-info)}
-.p-ui{background:var(--color-background-warning);color:var(--color-text-warning)}
-.p-done{background:var(--color-background-secondary);color:var(--color-text-secondary)}
+    * {
+      box-sizing: border-box;
+    }
 
-.step{display:grid;grid-template-columns:32px 1fr;gap:0;margin-bottom:4px}
-.step-left{display:flex;flex-direction:column;align-items:center}
-.step-dot{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;flex-shrink:0;z-index:1}
-.step-line{width:2px;flex:1;min-height:8px}
-.dot-done{background:var(--color-background-success);color:var(--color-text-success);border:1.5px solid var(--color-text-success)}
-.dot-next{background:var(--color-background-warning);color:var(--color-text-warning);border:2px solid var(--color-text-warning)}
-.dot-todo{background:var(--color-background-secondary);color:var(--color-text-tertiary);border:1.5px solid var(--color-border-secondary)}
-.line-done{background:var(--color-text-success);opacity:0.3}
-.line-todo{background:var(--color-border-secondary)}
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #f6f7f3 0%, #eef4f0 46%, #f8f5ec 100%);
+      color: var(--ink);
+      font-family: var(--sans);
+      line-height: 1.5;
+    }
 
-.step-body{padding:0 0 16px 12px}
-.step-title{font-size:13px;font-weight:500;color:var(--color-text-primary);margin:4px 0 2px}
-.step-desc{font-size:12px;color:var(--color-text-secondary);margin:0 0 4px;line-height:1.5}
-.step-files{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
-.file-tag{font-size:11px;font-family:var(--font-mono);padding:1px 6px;border-radius:4px;background:var(--color-background-secondary);color:var(--color-text-secondary)}
-.status-tag{font-size:11px;padding:2px 7px;border-radius:10px}
-.s-done{background:var(--color-background-success);color:var(--color-text-success)}
-.s-next{background:var(--color-background-warning);color:var(--color-text-warning)}
-.s-todo{background:var(--color-background-secondary);color:var(--color-text-tertiary)}
+    .page {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 32px 0 48px;
+    }
 
-.section-label{font-size:12px;font-weight:500;color:var(--color-text-secondary);margin:16px 0 8px;padding-left:44px;text-transform:uppercase;letter-spacing:0.05em}
-</style>
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.6fr);
+      gap: 18px;
+      align-items: stretch;
+      margin-bottom: 18px;
+    }
 
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:8px;margin-bottom:20px">
-  <div style="background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:10px 12px;text-align:center">
-    <div style="font-size:22px;font-weight:500;color:var(--color-text-success)">6</div>
-    <div style="font-size:11px;color:var(--color-text-secondary)">Hoàn thành</div>
-  </div>
-  <div style="background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:10px 12px;text-align:center">
-    <div style="font-size:22px;font-weight:500;color:var(--color-text-warning)">1</div>
-    <div style="font-size:11px;color:var(--color-text-secondary)">Tiếp theo</div>
-  </div>
-  <div style="background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:10px 12px;text-align:center">
-    <div style="font-size:22px;font-weight:500;color:var(--color-text-tertiary)">6</div>
-    <div style="font-size:11px;color:var(--color-text-secondary)">Còn lại</div>
-  </div>
-  <div style="background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:10px 12px;text-align:center">
-    <div style="font-size:22px;font-weight:500;color:var(--color-text-primary)">13</div>
-    <div style="font-size:11px;color:var(--color-text-secondary)">Tổng bước</div>
-  </div>
-</div>
+    .hero-main,
+    .hero-side,
+    .panel {
+      background: rgba(255, 255, 255, 0.88);
+      border: 1px solid rgba(223, 229, 221, 0.95);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
 
-<div class="section-label">— Hạ tầng & Pipeline —</div>
+    .hero-main {
+      padding: 28px;
+      overflow: hidden;
+      position: relative;
+    }
 
-<div class="step">
-  <div class="step-left"><div class="step-dot dot-done"><i class="ti ti-check" aria-hidden="true"></i></div><div class="step-line line-done"></div></div>
-  <div class="step-body">
-    <div style="display:flex;align-items:center;gap:8px"><span class="step-title">1 — Bootstrap project</span><span class="status-tag s-done">✓ Xong</span></div>
-    <p class="step-desc">Cấu trúc thư mục, Git + SSH, AGENTS.md layered, docs markdown, .env</p>
-    <div class="step-files"><span class="file-tag">AGENTS.md</span><span class="file-tag">.env</span><span class="file-tag">docs/</span><span class="file-tag">.codex/tasks/</span></div>
-  </div>
-</div>
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      width: fit-content;
+      margin: 0 0 12px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: var(--teal-soft);
+      color: var(--teal);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+    }
 
-<div class="step">
-  <div class="step-left"><div class="step-dot dot-done"><i class="ti ti-check" aria-hidden="true"></i></div><div class="step-line line-done"></div></div>
-  <div class="step-body">
-    <div style="display:flex;align-items:center;gap:8px"><span class="step-title">2 — docker-compose.yml</span><span class="status-tag s-done">✓ Xong</span></div>
-    <p class="step-desc">ES + Logstash + Filebeat + demo services + API server. Healthcheck, depends_on, volumes</p>
-    <div class="step-files"><span class="file-tag">docker-compose.yml</span><span class="file-tag">elasticsearch.yml</span><span class="file-tag">logstash.yml</span></div>
-  </div>
-</div>
+    h1 {
+      position: relative;
+      z-index: 1;
+      margin: 0;
+      max-width: 720px;
+      font-size: clamp(34px, 5vw, 62px);
+      line-height: 1.02;
+      letter-spacing: 0;
+    }
 
-<div class="step">
-  <div class="step-left"><div class="step-dot dot-done"><i class="ti ti-check" aria-hidden="true"></i></div><div class="step-line line-done"></div></div>
-  <div class="step-body">
-    <div style="display:flex;align-items:center;gap:8px"><span class="step-title">3 — Logstash + Filebeat config</span><span class="status-tag s-done">✓ Xong</span></div>
-    <p class="step-desc">JSON codec parse + Grok enrich. Filebeat tail /logs/**/*.log với multiline và registry</p>
-    <div class="step-files"><span class="file-tag">logstash.conf</span><span class="file-tag">filebeat.yml</span></div>
-  </div>
-</div>
+    .lead {
+      position: relative;
+      z-index: 1;
+      max-width: 690px;
+      margin: 16px 0 0;
+      color: var(--muted);
+      font-size: 16px;
+    }
 
-<div class="step">
-  <div class="step-left"><div class="step-dot dot-done"><i class="ti ti-check" aria-hidden="true"></i></div><div class="step-line line-done"></div></div>
-  <div class="step-body">
-    <div style="display:flex;align-items:center;gap:8px"><span class="step-title">4 — Demo services</span><span class="status-tag s-done">✓ Xong</span></div>
-    <p class="step-desc">Node.js và Go sinh log JSON Lines liên tục. INFO 60% / WARN 25% / ERROR 15%</p>
-    <div class="step-files"><span class="file-tag">services/demo-node/index.js</span><span class="file-tag">services/demo-go/main.go</span></div>
-  </div>
-</div>
+    .hero-actions {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 22px;
+    }
 
-<div class="section-label">— Go API Server —</div>
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 13px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #fff;
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 700;
+      text-decoration: none;
+    }
 
-<div class="step">
-  <div class="step-left"><div class="step-dot dot-done"><i class="ti ti-check" aria-hidden="true"></i></div><div class="step-line line-done"></div></div>
-  <div class="step-body">
-    <div style="display:flex;align-items:center;gap:8px"><span class="step-title">5 — Go API server</span><span class="status-tag s-done">✓ Xong</span></div>
-    <p class="step-desc">main.go + gin routes + ES client + CORS. Handlers logs và alerts. AlertEngine với Sliding Window, Deduplication, Dynamic Threshold</p>
-    <div class="step-files"><span class="file-tag">main.go</span><span class="file-tag">handlers/logs.go</span><span class="file-tag">handlers/alerts.go</span><span class="file-tag">alerting/engine.go</span><span class="file-tag">middleware/cors.go</span></div>
-  </div>
-</div>
+    .pill.primary {
+      border-color: transparent;
+      background: var(--ink);
+      color: #fff;
+    }
 
-<div class="step">
-  <div class="step-left"><div class="step-dot dot-next"><i class="ti ti-arrow-right" aria-hidden="true"></i></div><div class="step-line line-todo"></div></div>
-  <div class="step-body">
-    <div style="display:flex;align-items:center;gap:8px"><span class="step-title">6 — go mod tidy + verify compile</span><span class="status-tag s-next">Tiếp theo</span></div>
-    <p class="step-desc">Chạy go mod tidy để pull dependencies. Đảm bảo code compile không lỗi trước khi build Docker</p>
-    <div class="step-files"><span class="file-tag">go.mod</span><span class="file-tag">go.sum</span></div>
-  </div>
-</div>
+    .hero-side {
+      padding: 20px;
+      display: grid;
+      gap: 12px;
+      align-content: start;
+    }
 
-<div class="section-label">— Verify & Integration —</div>
+    .score {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
 
-<div class="step">
-  <div class="step-left"><div class="step-dot dot-todo">7</div><div class="step-line line-todo"></div></div>
-  <div class="step-body">
-    <div style="display:flex;align-items:center;gap:8px"><span class="step-title">7 — docker compose up + verify pipeline</span><span class="status-tag s-todo">Chưa làm</span></div>
-    <p class="step-desc">Khởi động toàn bộ stack. Kiểm tra log chạy từ demo service → ES. Curl test các endpoint cơ bản</p>
-    <div class="step-files"><span class="file-tag">curl /api/health</span><span class="file-tag">curl logs-*/_count</span></div>
-  </div>
-</div>
+    .score-card {
+      min-height: 92px;
+      padding: 14px;
+      border-radius: var(--radius);
+      background: #f8faf7;
+      border: 1px solid var(--line);
+    }
 
-<div class="section-label">— Dashboard —</div>
+    .score-card strong {
+      display: block;
+      font-size: 30px;
+      line-height: 1;
+      margin-bottom: 8px;
+    }
 
-<div class="step">
-  <div class="step-left"><div class="step-dot dot-todo">8</div><div class="step-line line-todo"></div></div>
-  <div class="step-body">
-    <div style="display:flex;align-items:center;gap:8px"><span class="step-title">8 — Dashboard log viewer</span><span class="status-tag s-todo">Chưa làm</span></div>
-    <p class="step-desc">Bảng hiển thị log, filter bar (level/app/search), pagination 20/trang, auto-refresh 10s</p>
-    <div class="step-files"><span class="file-tag">dashboard/index.html</span><span class="file-tag">dashboard/app.js</span><span class="file-tag">dashboard/style.css</span></div>
-  </div>
-</div>
+    .score-card span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
 
-<div class="step">
-  <div class="step-left"><div class="step-dot dot-todo">9</div><div class="step-line line-todo"></div></div>
-  <div class="step-body">
-    <div style="display:flex;align-items:center;gap:8px"><span class="step-title">9 — Alert banner + threshold control</span><span class="status-tag s-todo">Chưa làm</span></div>
-    <p class="step-desc">WebSocket listener nhận alert → banner đỏ. Input chỉnh threshold gửi POST /api/alerts/config</p>
-    <div class="step-files"><span class="file-tag">dashboard/app.js</span></div>
-  </div>
-</div>
+    .done strong { color: var(--green); }
+    .next strong { color: var(--amber); }
+    .todo strong { color: var(--muted); }
 
-<div class="section-label">— Polish & Bảo vệ —</div>
+    .now-box {
+      padding: 16px;
+      border-radius: var(--radius);
+      background: var(--amber-soft);
+      border: 1px solid rgba(183, 121, 31, 0.25);
+    }
 
-<div class="step">
-  <div class="step-left"><div class="step-dot dot-todo">10</div><div class="step-line line-todo"></div></div>
-  <div class="step-body">
-    <div style="display:flex;align-items:center;gap:8px"><span class="step-title">10 — End-to-end test</span><span class="status-tag s-todo">Chưa làm</span></div>
-    <p class="step-desc">Spam ERROR từ demo service → verify banner xuất hiện ≤10s. Đo và ghi response time thực tế vào docs</p>
-  </div>
-</div>
+    .now-box h2 {
+      margin: 0 0 6px;
+      font-size: 15px;
+    }
 
-<div class="step">
-  <div class="step-left"><div class="step-dot dot-todo">11</div><div class="step-line line-todo"></div></div>
-  <div class="step-body">
-    <div style="display:flex;align-items:center;gap:8px"><span class="step-title">11 — Hoàn thiện docs</span><span class="status-tag s-todo">Chưa làm</span></div>
-    <p class="step-desc">Điền số liệu thực tế vào bảng hiệu năng. Hoàn thiện README. Cập nhật LaTeX báo cáo</p>
-    <div class="step-files"><span class="file-tag">docs/deployment.md</span><span class="file-tag">README.md</span><span class="file-tag">report.tex</span></div>
-  </div>
-</div>
+    .now-box p {
+      margin: 0;
+      color: #6f4a10;
+      font-size: 13px;
+    }
 
-<div class="step">
-  <div class="step-left"><div class="step-dot dot-todo">12</div><div class="step-line line-done" style="opacity:0"></div></div>
-  <div class="step-body">
-    <div style="display:flex;align-items:center;gap:8px"><span class="step-title">12 — Chuẩn bị bảo vệ</span><span class="status-tag s-todo">Chưa làm</span></div>
-    <p class="step-desc">Demo script 5 phút. Câu trả lời 5 câu hỏi hay gặp. Test clone → chạy được từ đầu</p>
-  </div>
-</div>
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(300px, 0.9fr);
+      gap: 18px;
+      align-items: start;
+    }
 
-<div style="margin-top:16px;padding:12px 14px;background:var(--color-background-secondary);border-radius:var(--border-radius-md)">
-  <p style="font-size:12px;font-weight:500;color:var(--color-text-primary);margin:0 0 4px">Checkpoint quan trọng nhất hiện tại</p>
-  <p style="font-size:12px;color:var(--color-text-secondary);margin:0">Bước 6 (go mod tidy) → Bước 7 (docker compose up) — nếu pipeline chạy end-to-end là 70% dự án đã xong</p>
-</div>
+    .panel {
+      padding: 22px;
+      margin-bottom: 18px;
+    }
 
-<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:8px">
-  <button onclick="sendPrompt('Hướng dẫn chạy go mod tidy và kiểm tra compile cho api-server')" style="font-size:12px">Bước 6 — go mod tidy ↗</button>
-  <button onclick="sendPrompt('Viết dashboard index.html app.js style.css cho log viewer')" style="font-size:12px">Bước 8 — Dashboard ↗</button>
-</div>
+    .panel-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .panel-title h2 {
+      margin: 0;
+      font-size: 18px;
+      letter-spacing: 0;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      width: fit-content;
+      min-height: 24px;
+      padding: 3px 9px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .tag.done { background: var(--green-soft); color: var(--green); }
+    .tag.next { background: var(--amber-soft); color: var(--amber); }
+    .tag.todo { background: #eef0ed; color: var(--muted); }
+    .tag.docs { background: var(--blue-soft); color: var(--blue); }
+
+    .timeline {
+      display: grid;
+      gap: 10px;
+    }
+
+    .step {
+      display: grid;
+      grid-template-columns: 42px minmax(0, 1fr);
+      gap: 12px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fbfcfa;
+    }
+
+    .step.focus {
+      border-color: rgba(183, 121, 31, 0.35);
+      background: linear-gradient(135deg, #fffaf0, #ffffff);
+    }
+
+    .dot {
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      font-weight: 900;
+      font-size: 13px;
+      color: #fff;
+      background: var(--muted);
+    }
+
+    .dot.done { background: var(--green); }
+    .dot.next { background: var(--amber); }
+    .dot.todo { background: #9aa39d; }
+
+    .step h3 {
+      margin: 2px 0 4px;
+      font-size: 15px;
+      letter-spacing: 0;
+    }
+
+    .step p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .files {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 10px;
+    }
+
+    code,
+    .file {
+      font-family: var(--mono);
+    }
+
+    .file {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 7px;
+      border-radius: 8px;
+      background: #eef3ef;
+      color: #3f4b45;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .checklist {
+      display: grid;
+      gap: 10px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .checklist li {
+      display: grid;
+      grid-template-columns: 28px minmax(0, 1fr);
+      gap: 10px;
+      align-items: start;
+      padding: 12px;
+      border-radius: var(--radius);
+      border: 1px solid var(--line);
+      background: #fbfcfa;
+    }
+
+    .mark {
+      width: 24px;
+      height: 24px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: var(--blue-soft);
+      color: var(--blue);
+      font-weight: 900;
+      font-size: 12px;
+    }
+
+    .checklist strong {
+      display: block;
+      margin-bottom: 2px;
+      font-size: 14px;
+    }
+
+    .checklist span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    pre {
+      margin: 12px 0 0;
+      padding: 14px;
+      border-radius: var(--radius);
+      background: #1f2723;
+      color: #f7f4e8;
+      overflow-x: auto;
+      font-size: 12px;
+      line-height: 1.55;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+    }
+
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+      border-radius: var(--radius);
+      font-size: 13px;
+    }
+
+    .table th,
+    .table td {
+      padding: 11px 12px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .table th {
+      background: #f1f5f1;
+      color: #46524c;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .table tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .footer-note {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 12px;
+      text-align: center;
+    }
+
+    @media (max-width: 860px) {
+      .hero,
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      .score {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 560px) {
+      .page {
+        width: min(100% - 20px, 1180px);
+        padding-top: 18px;
+      }
+
+      .hero-main,
+      .hero-side,
+      .panel {
+        border-radius: var(--radius);
+        padding: 16px;
+      }
+
+      .score {
+        grid-template-columns: 1fr;
+      }
+
+      .panel-title {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .step {
+        grid-template-columns: 34px minmax(0, 1fr);
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <div class="hero-main">
+        <p class="eyebrow">Log System Roadmap</p>
+        <h1>Bước khó đã xong, giờ là verify và đóng gói để bảo vệ</h1>
+        <p class="lead">
+          Roadmap này phản ánh repo sau commit <code>0ceef5f</code>: pipeline,
+          API, alerting và dashboard đã có. Phần tiếp theo là chạy end-to-end
+          test, ghi số liệu thực tế, rồi chuẩn bị demo 5 phút.
+        </p>
+        <div class="hero-actions">
+          <a class="pill primary" href="#next">Xem bước tiếp theo</a>
+          <a class="pill" href="#evidence">Checklist test</a>
+          <a class="pill" href="#defense">Chuẩn bị bảo vệ</a>
+        </div>
+      </div>
+
+      <aside class="hero-side">
+        <div class="score">
+          <div class="score-card done">
+            <strong>9</strong>
+            <span>Hoàn thành</span>
+          </div>
+          <div class="score-card next">
+            <strong>1</strong>
+            <span>Đang tới</span>
+          </div>
+          <div class="score-card todo">
+            <strong>2</strong>
+            <span>Còn lại</span>
+          </div>
+        </div>
+        <div class="now-box">
+          <h2>Checkpoint hiện tại</h2>
+          <p>
+            Chạy Bước 10 để xác nhận dashboard serve được, filter API đúng,
+            dynamic threshold trigger alert và response time có số đo thật.
+          </p>
+        </div>
+      </aside>
+    </section>
+
+    <section class="grid">
+      <div>
+        <section class="panel">
+          <div class="panel-title">
+            <h2>Roadmap 12 bước</h2>
+            <span class="tag docs">Repo hiện tại</span>
+          </div>
+
+          <div class="timeline">
+            <article class="step">
+              <div class="dot done">1</div>
+              <div>
+                <h3>Bootstrap project <span class="tag done">Xong</span></h3>
+                <p>Cấu trúc thư mục, Git, AGENTS.md, docs, env mẫu.</p>
+                <div class="files"><span class="file">AGENTS.md</span><span class="file">docs/</span><span class="file">.env.example</span></div>
+              </div>
+            </article>
+
+            <article class="step">
+              <div class="dot done">2</div>
+              <div>
+                <h3>Docker Compose stack <span class="tag done">Xong</span></h3>
+                <p>Elasticsearch, Logstash, Filebeat, demo services và API server.</p>
+                <div class="files"><span class="file">docker-compose.yml</span><span class="file">elasticsearch.yml</span></div>
+              </div>
+            </article>
+
+            <article class="step">
+              <div class="dot done">3</div>
+              <div>
+                <h3>Logstash + Filebeat <span class="tag done">Xong</span></h3>
+                <p>Filebeat tail log file, Logstash parse JSON Lines và enrich message.</p>
+                <div class="files"><span class="file">filebeat.yml</span><span class="file">logstash.conf</span></div>
+              </div>
+            </article>
+
+            <article class="step">
+              <div class="dot done">4</div>
+              <div>
+                <h3>Demo services <span class="tag done">Xong</span></h3>
+                <p>Node.js và Go sinh log INFO/WARN/ERROR liên tục vào thư mục logs.</p>
+                <div class="files"><span class="file">services/demo-node</span><span class="file">services/demo-go</span></div>
+              </div>
+            </article>
+
+            <article class="step">
+              <div class="dot done">5</div>
+              <div>
+                <h3>Go API server <span class="tag done">Xong</span></h3>
+                <p>Gin routes, Elasticsearch client, REST API và static dashboard serving.</p>
+                <div class="files"><span class="file">api-server/main.go</span><span class="file">handlers/logs.go</span></div>
+              </div>
+            </article>
+
+            <article class="step">
+              <div class="dot done">6</div>
+              <div>
+                <h3>Dependencies + build readiness <span class="tag done">Xong</span></h3>
+                <p>Go module và Docker build path đã sẵn sàng cho API server.</p>
+                <div class="files"><span class="file">go.mod</span><span class="file">go.sum</span></div>
+              </div>
+            </article>
+
+            <article class="step">
+              <div class="dot done">7</div>
+              <div>
+                <h3>Pipeline integration <span class="tag done">Xong phần build</span></h3>
+                <p>Stack và endpoint đã có; Bước 10 sẽ chạy lại để ghi evidence mới.</p>
+                <div class="files"><span class="file">/api/health</span><span class="file">logs-*/_count</span></div>
+              </div>
+            </article>
+
+            <article class="step">
+              <div class="dot done">8</div>
+              <div>
+                <h3>Dashboard log viewer <span class="tag done">Xong</span></h3>
+                <p>Bảng log 4 cột, filter level/service/search, pagination và auto-refresh.</p>
+                <div class="files"><span class="file">dashboard/index.html</span><span class="file">dashboard/app.js</span><span class="file">dashboard/style.css</span></div>
+              </div>
+            </article>
+
+            <article class="step">
+              <div class="dot done">9</div>
+              <div>
+                <h3>Alert banner + threshold <span class="tag done">Xong</span></h3>
+                <p>WebSocket reconnect, banner đỏ khi có alert và POST threshold runtime.</p>
+                <div class="files"><span class="file">/ws/alerts</span><span class="file">/api/alerts/config</span></div>
+              </div>
+            </article>
+
+            <article class="step focus" id="next">
+              <div class="dot next">10</div>
+              <div>
+                <h3>End-to-end test <span class="tag next">Tiếp theo</span></h3>
+                <p>Rebuild API server, mở dashboard, test filter API, trigger alert và đo response time thật.</p>
+                <div class="files"><span class="file">docs/testing-evidence.md</span><span class="file">docs/deployment.md</span></div>
+              </div>
+            </article>
+
+            <article class="step">
+              <div class="dot todo">11</div>
+              <div>
+                <h3>Hoàn thiện docs <span class="tag todo">Chưa làm</span></h3>
+                <p>Điền số liệu thật, output command, screenshot và ghi chú báo cáo.</p>
+                <div class="files"><span class="file">README.md</span><span class="file">docs/report-notes.md</span></div>
+              </div>
+            </article>
+
+            <article class="step">
+              <div class="dot todo">12</div>
+              <div>
+                <h3>Chuẩn bị bảo vệ <span class="tag todo">Chưa làm</span></h3>
+                <p>Demo script 5 phút, ôn câu hỏi thường gặp và test clone sạch.</p>
+                <div class="files"><span class="file">docs/knowledge-base.md</span><span class="file">docs/project-roadmap.md</span></div>
+              </div>
+            </article>
+          </div>
+        </section>
+      </div>
+
+      <aside>
+        <section class="panel" id="evidence">
+          <div class="panel-title">
+            <h2>Bước 10 cần chạy</h2>
+            <span class="tag next">Quan trọng</span>
+          </div>
+          <ul class="checklist">
+            <li>
+              <span class="mark">1</span>
+              <div><strong>Dashboard serve được</strong><span>Output có <code>&lt;!DOCTYPE html&gt;</code>.</span></div>
+            </li>
+            <li>
+              <span class="mark">2</span>
+              <div><strong>Filter API đúng</strong><span>Test ERROR, demo-node và count theo level.</span></div>
+            </li>
+            <li>
+              <span class="mark">3</span>
+              <div><strong>Alerting trigger được</strong><span>Giảm threshold xuống 5, chờ log alert sent.</span></div>
+            </li>
+            <li>
+              <span class="mark">4</span>
+              <div><strong>Có số đo thật</strong><span>Đo response time API để điền docs.</span></div>
+            </li>
+          </ul>
+
+          <pre><code>docker compose build api-server
+docker compose up -d api-server
+
+curl -s http://localhost:8080/ | head -5
+curl -s "http://localhost:8080/api/logs?level=ERROR&amp;size=3" | python3 -m json.tool
+curl -s "http://localhost:8080/api/logs/count" | python3 -m json.tool</code></pre>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title">
+            <h2>Trigger alert</h2>
+            <span class="tag docs">WebSocket</span>
+          </div>
+          <pre><code>curl -s -X POST http://localhost:8080/api/alerts/config \
+  -H "Content-Type: application/json" \
+  -d '{"threshold": 5}' | python3 -m json.tool
+
+docker compose logs api-server | grep -i alert</code></pre>
+        </section>
+
+        <section class="panel" id="defense">
+          <div class="panel-title">
+            <h2>Demo bảo vệ</h2>
+            <span class="tag done">5 phút</span>
+          </div>
+          <table class="table">
+            <thead>
+              <tr><th>Thứ tự</th><th>Nội dung</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>1</td><td>Mở dashboard, chỉ log realtime.</td></tr>
+              <tr><td>2</td><td>Filter ERROR và demo-node.</td></tr>
+              <tr><td>3</td><td>Giảm threshold xuống 5.</td></tr>
+              <tr><td>4</td><td>Đợi banner đỏ xuất hiện.</td></tr>
+              <tr><td>5</td><td>Giải thích sliding window + dedup.</td></tr>
+            </tbody>
+          </table>
+        </section>
+      </aside>
+    </section>
+
+    <p class="footer-note">
+      Ghi số liệu thật vào <code>docs/testing-evidence.md</code> và <code>docs/deployment.md</code> sau khi chạy Bước 10.
+    </p>
+  </main>
+</body>
+</html>

@@ -81,9 +81,16 @@ http://localhost:8080
 
 ## Kế hoạch triển khai 4 tuần
 
+> Trạng thái hiện tại: các phần Infrastructure, Pipeline, Demo services, Go API,
+> Alerting Engine và Dashboard đã có trong repo. Giai đoạn tiếp theo không thêm
+> code mới; tập trung chạy Bước 10 end-to-end test, điền số liệu thật vào docs
+> và chuẩn bị bảo vệ. Roadmap chi tiết xem `docs/project-roadmap.md`.
+
 ### Tuần 1 — Infrastructure
 
 **Mục tiêu:** Pipeline chạy end-to-end, log vào được ES.
+
+**Trạng thái:** Hoàn thành, cần ghi lại output verify mới nhất sau Bước 10.
 
 **Tasks:**
 - Hoàn thiện `docker-compose.yml`
@@ -103,6 +110,9 @@ curl "http://localhost:9200/logs-*/_count"
 ### Tuần 2 — Go API Server
 
 **Mục tiêu:** Có thể query và filter log qua REST API.
+
+**Trạng thái:** Hoàn thành, cần verify runtime bằng các lệnh filter API trong
+`docs/project-roadmap.md`.
 
 **Tasks:**
 - `main.go` — khởi tạo gin, ES client, routes
@@ -126,6 +136,9 @@ time curl "http://localhost:8080/api/logs?size=100" -o /dev/null
 
 **Mục tiêu:** Alert banner xuất hiện khi hệ thống có spike ERROR.
 
+**Trạng thái:** Hoàn thành về code, cần rebuild/start `api-server` và verify
+dashboard + WebSocket alert trong Bước 10.1-10.3.
+
 **Tasks:**
 - `alerting/engine.go` — Sliding Window + Deduplication
 - `handlers/alerts.go` — WebSocket /ws/alerts
@@ -146,6 +159,9 @@ Kết quả thực tế: đo và ghi vào tài liệu sau khi hoàn thành
 ### Tuần 4 — Polish + Bảo vệ
 
 **Mục tiêu:** Hệ thống chạy ổn định, tài liệu đầy đủ, demo được.
+
+**Trạng thái:** Đang làm. Cần điền số liệu thật, chuẩn bị demo script 5 phút và
+test clone sạch trước khi bảo vệ.
 
 **Tasks:**
 - Đo và ghi nhận số liệu hiệu năng thực tế vào tài liệu
@@ -178,6 +194,16 @@ docker compose up -d
 | Dashboard load time | Pagination 20 record/trang | Đo sau tuần 3 |
 | Alert detection latency | Check interval = `ALERT_CHECK_INTERVAL_SECONDS` | Tối đa = interval value |
 | Log durability | Filebeat registry | Không mất log khi restart |
+
+### Lệnh đo cần chạy ở Bước 10
+
+```bash
+time curl -s "http://localhost:8080/api/logs?size=100" -o /dev/null
+time curl -s "http://localhost:8080/api/health" -o /dev/null
+```
+
+Sau khi có kết quả, ghi số `real` vào bảng trên và lưu output chi tiết trong
+`docs/testing-evidence.md`.
 
 ---
 
