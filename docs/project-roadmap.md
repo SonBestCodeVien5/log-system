@@ -2,8 +2,12 @@
 
 Tài liệu này phản ánh trạng thái repo sau commit `0ceef5f`
 (`feat: add dashboard and deployment guide`). Mục tiêu hiện tại là không thêm
-code mới, chỉ xác minh end-to-end, ghi bằng chứng, hoàn thiện tài liệu và chuẩn
-bị bảo vệ.
+scope lớn, ưu tiên xác minh end-to-end, ghi bằng chứng, hoàn thiện tài liệu và
+chuẩn bị bảo vệ. Nếu thêm code, chỉ nên là một kịch bản incident nhỏ để chủ động
+trigger alert khi demo.
+
+Roadmap chi tiết cho 1 tháng trước báo cáo/bảo vệ nằm ở
+[`docs/one-month-defense-roadmap.md`](one-month-defense-roadmap.md).
 
 ## Tổng quan trạng thái
 
@@ -98,6 +102,9 @@ git push
 ## Bước 11 - Hoàn thiện docs
 
 Mục tiêu: biến repo thành tài liệu có thể clone và chạy được ngay.
+
+Checklist chi tiết theo tuần nằm ở
+[`docs/one-month-defense-roadmap.md`](one-month-defense-roadmap.md).
 
 Việc cần làm:
 

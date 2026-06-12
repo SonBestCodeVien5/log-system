@@ -2,6 +2,9 @@
 
 Record commands, results, and evidence used to validate the system.
 
+Thứ tự verify chi tiết theo tuần nằm ở
+[`docs/one-month-defense-roadmap.md`](one-month-defense-roadmap.md).
+
 ## Evidence Template
 
 - Feature:

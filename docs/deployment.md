@@ -83,8 +83,10 @@ http://localhost:8080
 
 > Trạng thái hiện tại: các phần Infrastructure, Pipeline, Demo services, Go API,
 > Alerting Engine và Dashboard đã có trong repo. Giai đoạn tiếp theo không thêm
-> code mới; tập trung chạy Bước 10 end-to-end test, điền số liệu thật vào docs
-> và chuẩn bị bảo vệ. Roadmap chi tiết xem `docs/project-roadmap.md`.
+> scope lớn; tập trung chạy Bước 10 end-to-end test, điền số liệu thật vào docs,
+> chuẩn bị bảo vệ và chỉ thêm kịch bản incident nhỏ nếu cần demo alert chủ động.
+> Roadmap chi tiết xem `docs/project-roadmap.md`; roadmap học/verify/bảo vệ 1 tháng cuối xem
+> [`docs/one-month-defense-roadmap.md`](one-month-defense-roadmap.md).
 
 ### Tuần 1 — Infrastructure
 

@@ -2,6 +2,9 @@
 
 Base URL: `http://localhost:8080`
 
+Roadmap verify API trong 1 tháng cuối nằm ở
+[`docs/one-month-defense-roadmap.md`](one-month-defense-roadmap.md).
+
 ## Endpoints
 
 ### GET /api/health
@@ -34,10 +37,11 @@ Lấy danh sách log, hỗ trợ filter và phân trang.
 {
   "data": [
     {
-      "timestamp": "2024-01-15T10:23:11Z",
-      "level":     "ERROR",
-      "service":   "demo-node",
-      "message":   "Payment gateway timeout after 30s"
+      "@timestamp":  "2024-01-15T10:23:11Z",
+      "level":       "ERROR",
+      "service":     "demo-node",
+      "log_message": "Payment gateway timeout after 30s",
+      "metadata":    { "order_id": "789" }
     }
   ],
   "total": 100,
@@ -91,7 +95,14 @@ Cập nhật cấu hình alerting động, không cần restart server.
 
 **Response:**
 ```json
-{ "status": "updated", "threshold": 10 }
+{
+  "status": "updated",
+  "config": {
+    "threshold": 10,
+    "window_seconds": 300,
+    "cooldown_seconds": 60
+  }
+}
 ```
 
 ---
@@ -110,6 +121,22 @@ ws.onmessage = (event) => {
 ```
 
 **Message format:**
+
+Khi vừa connect, server gửi config hiện tại:
+
+```json
+{
+  "type": "config",
+  "config": {
+    "threshold": 10,
+    "window_seconds": 300,
+    "cooldown_seconds": 60
+  }
+}
+```
+
+Khi có spike ERROR, server gửi alert:
+
 ```json
 {
   "type":      "error_spike",
@@ -134,3 +161,4 @@ Tất cả lỗi trả về cùng format:
 | 200 | Thành công |
 | 400 | Request không hợp lệ |
 | 500 | Lỗi server hoặc Elasticsearch |
+| 503 | Elasticsearch chưa kết nối được ở `/api/health` |

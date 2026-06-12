@@ -444,8 +444,9 @@ docker compose up -d
 
 ## Tài liệu liên quan
 
-- `docs/architecture.md` - kiến trúc và luồng dữ liệu
-- `docs/api.md` - contract API và ví dụ request/response
-- `docs/deployment.md` - hướng dẫn cài đặt, triển khai, vận hành chi tiết
-- `docs/testing-evidence.md` - lệnh kiểm thử và bằng chứng xác minh
-- `docs/decisions.md` - quyết định kỹ thuật và lý do lựa chọn
+- [`docs/architecture.md`](docs/architecture.md) - kiến trúc và luồng dữ liệu
+- [`docs/one-month-defense-roadmap.md`](docs/one-month-defense-roadmap.md) - roadmap 1 tháng cuối: verify, học sâu, incident demo, bảo vệ
+- [`docs/api.md`](docs/api.md) - contract API và ví dụ request/response
+- [`docs/deployment.md`](docs/deployment.md) - hướng dẫn cài đặt, triển khai, vận hành chi tiết
+- [`docs/testing-evidence.md`](docs/testing-evidence.md) - lệnh kiểm thử và bằng chứng xác minh
+- [`docs/decisions.md`](docs/decisions.md) - quyết định kỹ thuật và lý do lựa chọn

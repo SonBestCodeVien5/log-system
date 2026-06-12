@@ -5,6 +5,9 @@
 Hệ thống log tập trung (Centralized Logging Platform) gom log từ nhiều service,
 parse và lưu vào Elasticsearch, cung cấp dashboard tìm kiếm và alerting real-time.
 
+Roadmap học, verify và chuẩn bị bảo vệ trong 1 tháng cuối nằm ở
+[`docs/one-month-defense-roadmap.md`](one-month-defense-roadmap.md).
+
 ---
 
 ## Luồng dữ liệu
@@ -184,7 +187,9 @@ func (e *AlertEngine) shouldAlert(key string) bool {
 ### Dynamic Threshold
 
 Dashboard gửi ngưỡng mới về API, goroutine cập nhật ngay không restart.
-Dùng `sync.RWMutex` riêng cho threshold — tách biệt với mutex của dedup map.
+Implementation hiện tại dùng một `sync.Mutex` trong `AlertEngine` cho config
+và dedup map; cách này giữ check/update đơn giản và đảm bảo phần dedup atomic.
+Danh sách WebSocket clients dùng mutex riêng để tách khỏi config alerting.
 
 ---
 

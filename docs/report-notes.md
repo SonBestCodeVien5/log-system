@@ -2,6 +2,9 @@
 
 Working notes for the graduation report. Use this file to collect report-ready explanations from implemented features, architecture decisions, testing evidence, and known limitations.
 
+Roadmap 1 tháng cuối để biến các ghi chú này thành demo/report hoàn chỉnh:
+[`docs/one-month-defense-roadmap.md`](one-month-defense-roadmap.md).
+
 ## Feature Summaries
 
 Record each feature with:
@@ -60,4 +63,5 @@ Track screenshots, command outputs, demo flows, or diagrams that should be captu
 - Sliding window khác gì polling cố định?
 - Alert deduplication tránh Alert Fatigue như thế nào?
 
-Nguồn ôn tập chính: `docs/knowledge-base.md`.
+Nguồn ôn tập chính: [`docs/knowledge-base.md`](knowledge-base.md).
+Lịch ôn theo tuần: [`docs/one-month-defense-roadmap.md`](one-month-defense-roadmap.md).

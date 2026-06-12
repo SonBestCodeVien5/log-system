@@ -1,6 +1,9 @@
 # Tài liệu tri thức — Dự án Log System
 > Tổng hợp toàn bộ phân tích, quyết định kỹ thuật và kiến thức nền
-> trước khi bắt đầu triển khai. Dùng làm tài liệu tham chiếu khi bảo vệ.
+> đã được đối chiếu với implementation hiện tại. Dùng làm tài liệu tham chiếu khi bảo vệ.
+>
+> Roadmap học, verify và chuẩn bị bảo vệ trong 1 tháng cuối nằm ở
+> [`docs/one-month-defense-roadmap.md`](one-month-defense-roadmap.md).
 
 ---
 
@@ -45,7 +48,7 @@ Elasticsearch, Logstash, Spring Java
 |---|---|---|
 | Docker Compose + networking | 3 ngày | Trung bình |
 | Elasticsearch basics | 4 ngày | Trung bình |
-| Logstash Grok pattern | 2 ngày | Thấp (config) |
+| Logstash JSON codec + Grok enrich | 2 ngày | Thấp (config) |
 | Filebeat config | 1 ngày | Thấp |
 | Go + gin + goroutine | 3 ngày | Thấp (đã có nền) |
 | WebSocket cơ bản | 1 ngày | Thấp |
@@ -69,7 +72,7 @@ Elasticsearch, Logstash, Spring Java
                                       |
                                    :5044
                               [Logstash - Processor]
-                               Grok parse → JSON
+                               JSON parse → Grok enrich
                                       |
                                    :9200
                               [Elasticsearch - Storage]
@@ -99,10 +102,10 @@ Các service sinh ra log. Với dự án này dùng 2 demo service (Node.js + Go
 Agent nhẹ chạy cùng service, tail log file, buffer khi downstream down, ship tới Logstash. Có *registry* — nhớ đã đọc đến dòng nào, không mất log khi restart.
 
 **Tầng 3 — Logstash (Processor)**
-Nhận raw text từ Filebeat, dùng Grok pattern parse thành JSON có cấu trúc. Không cần viết code — chỉ viết file config `.conf`.
+Nhận JSON Lines từ Filebeat, parse JSON trước, promote các field quan trọng lên root rồi dùng Grok chỉ để enrich thêm thông tin từ `message`. Không cần viết code application — chỉ viết file config `.conf`.
 
 **Tầng 4 — Elasticsearch (Storage)**
-Lưu trữ log dạng JSON document, index theo ngày. Full-text search cực nhanh nhờ inverted index. ILM policy tự xóa index cũ.
+Lưu trữ log dạng JSON document, index theo ngày. Full-text search nhanh nhờ inverted index. Retention/ILM production hiện là hạn chế cần phát triển thêm, chưa phải phần đã cấu hình đầy đủ trong repo.
 
 **Tầng 5 — Go API + Dashboard**
 REST API query ES, WebSocket push alert. Dashboard HTML thuần gọi API và nhận WebSocket.
@@ -166,7 +169,7 @@ t=10s: đếm ERROR [t-300s, t] = 15 → ALERT!
 t=20s: đếm ERROR [t-300s, t] = 14 → dedup, không bắn lại
 ```
 
-**Implement:** `time.NewTicker` + ES range query `now-5m`.
+**Implement:** `time.NewTicker` trong [`api-server/alerting/engine.go`](../api-server/alerting/engine.go#L82-L91) + ES range query `now-<window>s` trong [`countErrors`](../api-server/alerting/engine.go#L229-L256).
 
 ### 5.2 Alert Deduplication
 **Vấn đề giải quyết:** Alert Fatigue — khi hệ thống sập xả 10.000 lỗi,
@@ -177,53 +180,61 @@ nếu trong cooldown thì bỏ qua.
 
 ```go
 type AlertEngine struct {
-    sent     map[string]time.Time  // dedup tracking
-    cooldown time.Duration
-    mu       sync.RWMutex
+    mu              sync.Mutex
+    cooldownSeconds int
+    sent            map[string]time.Time
 }
 
 func (e *AlertEngine) shouldAlert(key string) bool {
-    e.mu.RLock()
-    lastSent, exists := e.sent[key]
-    e.mu.RUnlock()
-
-    if exists && time.Since(lastSent) < e.cooldown {
-        return false
-    }
     e.mu.Lock()
+    defer e.mu.Unlock()
+
+    cooldown := time.Duration(e.cooldownSeconds) * time.Second
+    if lastSent, exists := e.sent[key]; exists {
+        if time.Since(lastSent) < cooldown {
+            return false
+        }
+    }
     e.sent[key] = time.Now()
-    e.mu.Unlock()
     return true
 }
 ```
+
+Code thật nằm ở [`shouldAlert`](../api-server/alerting/engine.go#L141-L153). Điểm quan trọng khi bảo vệ: check cooldown và ghi `sent[key]` dùng cùng một `Lock`, vì tách `RLock` rồi `Lock` có thể tạo race condition khiến hai goroutine cùng gửi alert.
 
 **Khái niệm cần biết khi bảo vệ:** Alert Fatigue là thuật ngữ chuẩn trong SRE/DevOps.
 
 ### 5.3 Dynamic Threshold
 **Vấn đề giải quyết:** Thay đổi ngưỡng cảnh báo mà không cần restart server.
 
-**Cách làm:** Dashboard gửi config mới qua WebSocket hoặc REST,
-goroutine alerting đọc giá trị mới ngay lập tức.
+**Cách làm:** Dashboard gửi config mới bằng REST `POST /api/alerts/config`,
+handler gọi `UpdateConfig`, goroutine alerting đọc giá trị mới ở lần check tiếp theo.
 
-**Khái niệm cần biết:** `sync.RWMutex` — nhiều goroutine đọc đồng thời được,
-chỉ 1 goroutine ghi tại một thời điểm. Nếu không dùng mutex → race condition.
+**Khái niệm cần biết:** shared state của alerting engine cần mutex. Code hiện tại dùng một `sync.Mutex` cho config và dedup map để đơn giản và atomic.
 
 ```go
-// Đọc (goroutine alerting)
-mu.RLock()
-current := threshold
-mu.RUnlock()
+func (e *AlertEngine) UpdateConfig(cfg AlertConfig) {
+    e.mu.Lock()
+    defer e.mu.Unlock()
 
-// Ghi (goroutine WebSocket handler)
-mu.Lock()
-threshold = newValue
-mu.Unlock()
+    if cfg.Threshold > 0 {
+        e.threshold = cfg.Threshold
+    }
+    if cfg.WindowSeconds > 0 {
+        e.windowSeconds = cfg.WindowSeconds
+    }
+    if cfg.CooldownSeconds > 0 {
+        e.cooldownSeconds = cfg.CooldownSeconds
+    }
+}
 ```
 
-### Thứ tự implement
-1. Sliding Window — dễ nhất, làm ngay từ đầu (cách đúng)
-2. Alert Deduplication — tuần 3, ~2 tiếng code
-3. Dynamic Threshold — tuần 3 nếu còn thời gian, ~4 tiếng code
+Code thật nằm ở [`UpdateConfig`](../api-server/alerting/engine.go#L158-L174), [`POST /api/alerts/config`](../api-server/handlers/alerts.go#L64-L82), và dashboard gọi API trong [`updateThreshold`](../dashboard/app.js#L235-L255).
+
+### Trạng thái implement hiện tại
+1. Sliding Window — đã implement.
+2. Alert Deduplication — đã implement bằng single `Lock`.
+3. Dynamic Threshold — đã implement qua REST API và dashboard input.
 
 ---
 
@@ -314,6 +325,8 @@ sharedValue = newVal
 mu.Unlock()
 ```
 
+Trong repo hiện tại, `sync.RWMutex` được dùng cho danh sách WebSocket clients vì nhiều goroutine có thể broadcast/read danh sách client trong khi connect/disconnect ghi vào map. Riêng config và dedup của alerting dùng `sync.Mutex` để giữ logic đơn giản và tránh tách check/write.
+
 **GC (Garbage Collector)**
 Cơ chế tự động dọn bộ nhớ không còn dùng. Go GC ít pause hơn JVM GC.
 JVM (Spring) có "stop-the-world pause" làm chương trình dừng ngắn.
@@ -322,19 +335,22 @@ JVM (Spring) có "stop-the-world pause" làm chương trình dừng ngắn.
 Go compile ra 1 file binary chạy được ngay, không cần runtime (JVM, Node.js).
 Docker image từ `scratch` + binary → image ~15MB thay vì ~500MB với JDK.
 
-### Logstash Grok
+### Logstash JSON parse + Grok enrich
 
-Grok là regex có tên, dùng để parse log text thành JSON:
-```
-Input:  "[2024-01-15T10:23:11Z] [ERROR] [demo-node] Payment failed"
-Pattern: \[%{TIMESTAMP_ISO8601:timestamp}\] \[%{LOGLEVEL:level}\s*\] \[%{DATA:service}\] %{GREEDYDATA:message}
-Output: {
-  "timestamp": "2024-01-15T10:23:11Z",
-  "level":     "ERROR",
-  "service":   "demo-node",
-  "message":   "Payment failed"
+Trong repo này, Grok **không phải parser chính**. Parser chính là JSON parse trong [`logstash/pipeline/logstash.conf`](../logstash/pipeline/logstash.conf#L18-L22). Sau đó Logstash promote field từ object `log` lên root trong [`mutate rename`](../logstash/pipeline/logstash.conf#L35-L44).
+
+Grok chỉ enrich phụ từ `message`, ví dụ tách `error_code` nếu message có dạng `PAYMENT_FAILED: gateway timeout`:
+
+```conf
+grok {
+  match => {
+    "message" => "^(?:%{WORD:error_code}:\s*)?%{GREEDYDATA:error_detail}"
+  }
+  tag_on_failure => []
 }
 ```
+
+`tag_on_failure => []` giúp message không match Grok vẫn đi tiếp, không làm mất log.
 Tool test: [grokdebugger.com](https://grokdebugger.com)
 
 ---
@@ -445,27 +461,11 @@ Railway.app ($5 credit miễn phí), hoặc mượn VPS từ trường.
 
 ---
 
-## 11. Timeline 4 tuần
+## 11. Roadmap 1 tháng cuối
 
-```
-Tuần 1 — Infrastructure
-  Mục tiêu: docker compose up chạy ES + Logstash + Filebeat
-  Verify: gửi được 1 dòng log vào ES, query ra bằng curl
-  Files: docker-compose.yml, filebeat.yml, logstash.conf
+Roadmap triển khai ban đầu đã hoàn thành phần lớn. Giai đoạn hiện tại không phải làm lại từ đầu, mà là verify, học sâu, cập nhật evidence, thêm một kịch bản incident nhỏ và chuẩn bị bảo vệ.
 
-Tuần 2 — Services & API
-  Mục tiêu: demo services sinh log, Go API filter được log
-  Files: demo-node/index.js, demo-go/main.go, api-server/
-
-Tuần 3 — Alerting & Dashboard
-  Mục tiêu: alert banner xuất hiện khi spam ERROR
-  Features: Sliding Window, Deduplication, (Dynamic Threshold nếu kịp)
-  Files: alerting/engine.go, dashboard/
-
-Tuần 4 — Docs & Polish
-  Mục tiêu: chạy ổn định, tài liệu đầy đủ, chuẩn bị demo
-  Files: docs/, README.md hoàn chỉnh
-```
+Xem chi tiết tại [`docs/one-month-defense-roadmap.md`](one-month-defense-roadmap.md).
 
 ---
 
