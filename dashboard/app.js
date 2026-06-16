@@ -3,8 +3,13 @@
 // Fetch API + WebSocket + Filter + Pagination + Alert Banner
 // =================================================================
 
-const API_BASE = "http://localhost:8080";
-const WS_URL   = "ws://localhost:8080/ws/alerts";
+// API và WebSocket cùng host/port với trang đang serve dashboard.
+// Tránh hardcode "localhost:8080" — sẽ vỡ khi truy cập qua tên server,
+// reverse proxy, hoặc đổi API_PORT trong .env.
+const API_BASE = window.location.origin;
+const WS_URL   =
+  (window.location.protocol === "https:" ? "wss://" : "ws://") +
+  window.location.host + "/ws/alerts";
 const PAGE_SIZE = 20;
 
 // ---------------------------------------------------------------
@@ -63,10 +68,17 @@ async function fetchLogs() {
 
 // ---------------------------------------------------------------
 // Fetch stats — GET /api/logs/count
+// Tôn trọng filter app hiện tại để stats khớp với bảng bên dưới.
+// (Backend hỗ trợ filter 'app'; level vẫn hiển thị riêng từng cột.)
 // ---------------------------------------------------------------
 async function fetchStats() {
+  const params = new URLSearchParams();
+  params.set("from", "now-1h");
+  const app = document.getElementById("filter-app").value;
+  if (app) params.set("app", app);
+
   try {
-    const res  = await fetch(`${API_BASE}/api/logs/count?from=now-1h`);
+    const res  = await fetch(`${API_BASE}/api/logs/count?${params}`);
     const data = await res.json();
 
     document.getElementById("stat-total").textContent =
@@ -94,14 +106,29 @@ function renderTable(logs) {
     return;
   }
 
-  tbody.innerHTML = logs.map(log => `
+  // Tất cả field tới từ ES đều phải escape trước khi nhúng vào HTML.
+  // Trước đây chỉ message được escape, level/service nhúng raw qua
+  // template literal — bất kỳ log nào có level/service chứa ký tự
+  // HTML đều có thể phá layout (hoặc tệ hơn nếu pipeline log thay đổi).
+  // Level cũng được whitelist để tránh tạo CSS class lạ.
+  const VALID_LEVELS = new Set(["INFO", "WARN", "ERROR"]);
+
+  tbody.innerHTML = logs.map(log => {
+    const rawLevel = String(log.level || "").toUpperCase();
+    const level    = VALID_LEVELS.has(rawLevel) ? rawLevel : "INFO";
+    const levelTxt = escapeHtml(log.level || "—");
+    const service  = escapeHtml(log.service || "—");
+    const ts       = escapeHtml(formatTimestamp(log["@timestamp"]));
+    const message  = escapeHtml(log.log_message || "—");
+
+    return `
     <tr>
-      <td class="ts-cell" data-label="Thời gian">${formatTimestamp(log["@timestamp"])}</td>
-      <td data-label="Level"><span class="badge badge-${log.level || "INFO"}">${log.level || "—"}</span></td>
-      <td class="svc-cell" data-label="Service">${log.service || "—"}</td>
-      <td class="msg-cell" data-label="Message">${escapeHtml(log.log_message || "—")}</td>
-    </tr>
-  `).join("");
+      <td class="ts-cell" data-label="Thời gian">${ts}</td>
+      <td data-label="Level"><span class="badge badge-${level}">${levelTxt}</span></td>
+      <td class="svc-cell" data-label="Service">${service}</td>
+      <td class="msg-cell" data-label="Message">${message}</td>
+    </tr>`;
+  }).join("");
 }
 
 // ---------------------------------------------------------------
@@ -321,7 +348,9 @@ function escapeHtml(str) {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;")
+    .replace(/`/g, "&#96;");
 }
 
 function showTableError(msg) {
