@@ -53,10 +53,14 @@ func main() {
 	log.Printf("[main] Elasticsearch connected")
 
 	// ---------------------------------------------------------------
-	// Alerting Engine — chạy trong goroutine nền
+	// Alerting Engine — chạy trong goroutine nền với context để
+	// shutdown sạch khi nhận SIGINT/SIGTERM.
 	// ---------------------------------------------------------------
+	engineCtx, engineCancel := context.WithCancel(context.Background())
+	defer engineCancel()
+
 	engine := alerting.NewEngine(esClient)
-	go engine.Run()
+	go engine.Run(engineCtx)
 	log.Printf("[main] Alerting engine started")
 
 	// ---------------------------------------------------------------
@@ -113,6 +117,8 @@ func main() {
 	<-quit
 
 	log.Println("[main] Shutting down...")
+	engineCancel() // dừng alerting goroutine
+
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	if err := srv.Shutdown(ctx); err != nil {

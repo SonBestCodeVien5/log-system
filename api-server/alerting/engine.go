@@ -77,17 +77,24 @@ func NewEngine(es *elasticsearch.Client) *AlertEngine {
 }
 
 // ---------------------------------------------------------------
-// Run — goroutine chính, chạy Sliding Window loop
+// Run — goroutine chính, chạy Sliding Window loop.
+// Trả về khi ctx bị cancel (graceful shutdown từ main).
 // ---------------------------------------------------------------
-func (e *AlertEngine) Run() {
+func (e *AlertEngine) Run(ctx context.Context) {
 	ticker := time.NewTicker(e.checkInterval)
 	defer ticker.Stop()
 
 	log.Printf("[alerting] started — interval=%v threshold=%d window=%ds",
 		e.checkInterval, e.threshold, e.windowSeconds)
 
-	for range ticker.C {
-		e.check()
+	for {
+		select {
+		case <-ctx.Done():
+			log.Printf("[alerting] stopped: %v", ctx.Err())
+			return
+		case <-ticker.C:
+			e.check()
+		}
 	}
 }
 
