@@ -3,3 +3,4 @@ logs/
 *.log
 api-server/bin/
 services/demo-go/bin/
+.playwright-mcp

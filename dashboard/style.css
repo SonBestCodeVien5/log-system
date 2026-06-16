@@ -91,22 +91,97 @@ body {
 .ws-badge.connected    { background: #dcfce7; color: #166534; }
 .ws-badge.disconnected { background: #fee2e2; color: #991b1b; }
 
-.threshold-label {
+.ops-strip {
+  padding: 0 24px 12px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.alert-config-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+
+.alert-config-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.panel-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.config-field {
   display: flex;
   align-items: center;
   gap: 8px;
   font-size: 13px;
+  color: #374151;
+  white-space: nowrap;
+}
+
+.config-field span {
+  font-size: 13px;
+  font-weight: 500;
   color: #6b7280;
 }
 
-.threshold-label input[type="number"] {
-  width: 64px;
-  padding: 4px 8px;
+.config-field input[type="number"] {
+  width: 96px;
+  padding: 6px 10px;
   border: 1px solid #d1d5db;
   border-radius: 6px;
   font-size: 13px;
-  text-align: center;
+  background: #fff;
+  color: #111;
+  text-align: left;
 }
+
+.alert-config-fields {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.alert-config-panel .btn-primary {
+  padding: 6px 14px;
+  border: 1px solid #111;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  background: #111;
+  color: #fff;
+  height: 34px;
+  white-space: nowrap;
+}
+
+.alert-config-panel .btn-primary:hover { background: #333; }
+
+.config-status {
+  min-width: 0;
+  font-size: 12px;
+  color: #6b7280;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.config-status.ok { color: #166534; }
+.config-status.error { color: #991b1b; }
+.config-status.pending { color: #92400e; }
 
 /* ============================================================
    STATS BAR
@@ -319,3 +394,70 @@ button {
 }
 
 button:hover { background: #f3f4f6; }
+
+@media (max-width: 900px) {
+  .config-status {
+    width: 100%;
+    white-space: normal;
+  }
+}
+
+@media (max-width: 640px) {
+  .header,
+  .stats-bar,
+  .filter-bar,
+  .table-container,
+  .pagination,
+  .ops-strip {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .header-inner,
+  .filter-bar,
+  .pagination {
+    align-items: stretch;
+  }
+
+  .stats-bar {
+    gap: 8px;
+  }
+
+  .stat-card {
+    flex: 1 1 calc(50% - 8px);
+    min-width: 140px;
+    padding: 10px 12px;
+  }
+
+  .alert-config-panel,
+  .filter-group {
+    width: 100%;
+  }
+
+  .alert-config-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .alert-config-fields {
+    width: 100%;
+  }
+
+  .filter-group select,
+  .filter-group input[type="text"],
+  .filter-group button {
+    width: 100%;
+  }
+
+  .filter-right {
+    width: 100%;
+  }
+
+  .config-field input[type="number"] {
+    width: 100px;
+  }
+
+  .alert-config-panel .btn-primary {
+    width: 100%;
+  }
+}

@@ -28,6 +28,11 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("filter-search")
     .addEventListener("keydown", e => { if (e.key === "Enter") applyFilter(); });
 
+  ["threshold-input", "window-input", "cooldown-input"].forEach(id => {
+    document.getElementById(id)
+      .addEventListener("keydown", e => { if (e.key === "Enter") updateAlertConfig(); });
+  });
+
   // Toggle auto-refresh
   document.getElementById("auto-refresh")
     .addEventListener("change", e => {
@@ -91,10 +96,10 @@ function renderTable(logs) {
 
   tbody.innerHTML = logs.map(log => `
     <tr>
-      <td class="ts-cell">${formatTimestamp(log["@timestamp"])}</td>
-      <td><span class="badge badge-${log.level || "INFO"}">${log.level || "—"}</span></td>
-      <td class="svc-cell">${log.service || "—"}</td>
-      <td class="msg-cell">${escapeHtml(log.log_message || "—")}</td>
+      <td class="ts-cell" data-label="Thời gian">${formatTimestamp(log["@timestamp"])}</td>
+      <td data-label="Level"><span class="badge badge-${log.level || "INFO"}">${log.level || "—"}</span></td>
+      <td class="svc-cell" data-label="Service">${log.service || "—"}</td>
+      <td class="msg-cell" data-label="Message">${escapeHtml(log.log_message || "—")}</td>
     </tr>
   `).join("");
 }
@@ -193,9 +198,9 @@ function connectWebSocket() {
       }
 
       if (msg.type === "config") {
-        // Cập nhật input threshold theo config hiện tại
-        document.getElementById("threshold-input").value =
-          msg.config.threshold || 10;
+        // Cập nhật các input config theo trạng thái hiện tại
+        setAlertConfigInputs(msg.config);
+        setConfigStatus("Đã đồng bộ cấu hình hiện tại", "ok");
       }
     } catch (_) {}
   };
@@ -232,26 +237,65 @@ function closeAlert() {
 // ---------------------------------------------------------------
 // Dynamic Threshold — POST /api/alerts/config
 // ---------------------------------------------------------------
-async function updateThreshold() {
-  const val = parseInt(document.getElementById("threshold-input").value);
-  if (!val || val < 1) {
-    alert("Ngưỡng phải là số nguyên dương");
+async function updateAlertConfig() {
+  const threshold = parseInt(document.getElementById("threshold-input").value);
+  const windowSeconds = parseInt(document.getElementById("window-input").value);
+  const cooldownSeconds = parseInt(document.getElementById("cooldown-input").value);
+
+  if (!threshold || threshold < 1) {
+    setConfigStatus("Ngưỡng phải là số nguyên dương", "error");
+    return;
+  }
+  if (!windowSeconds || windowSeconds < 1) {
+    setConfigStatus("Window phải là số nguyên dương", "error");
+    return;
+  }
+  if (!cooldownSeconds || cooldownSeconds < 1) {
+    setConfigStatus("Cooldown phải là số nguyên dương", "error");
     return;
   }
 
   try {
+    setConfigStatus("Đang cập nhật...", "pending");
     const res = await fetch(`${API_BASE}/api/alerts/config`, {
       method:  "POST",
       headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({ threshold: val }),
+      body:    JSON.stringify({
+        threshold,
+        window_seconds: windowSeconds,
+        cooldown_seconds: cooldownSeconds,
+      }),
     });
     const data = await res.json();
+    if (!res.ok) {
+      setConfigStatus(data.error || "Không thể cập nhật cấu hình", "error");
+      return;
+    }
     if (data.status === "updated") {
-      alert(`Đã cập nhật ngưỡng cảnh báo: ${val} lỗi`);
+      setAlertConfigInputs(data.config || {});
+      setConfigStatus(
+        `Đã cập nhật: threshold ${threshold}, window ${windowSeconds}s, cooldown ${cooldownSeconds}s`,
+        "ok"
+      );
     }
   } catch (err) {
-    alert("Lỗi khi cập nhật ngưỡng: " + err.message);
+    setConfigStatus("Lỗi khi cập nhật cấu hình: " + err.message, "error");
   }
+}
+
+function setAlertConfigInputs(config) {
+  document.getElementById("threshold-input").value =
+    config.threshold || 10;
+  document.getElementById("window-input").value =
+    config.window_seconds || 300;
+  document.getElementById("cooldown-input").value =
+    config.cooldown_seconds || 60;
+}
+
+function setConfigStatus(message, state) {
+  const el = document.getElementById("config-status");
+  el.textContent = message;
+  el.className = `config-status ${state || ""}`.trim();
 }
 
 // ---------------------------------------------------------------

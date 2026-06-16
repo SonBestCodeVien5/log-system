@@ -24,13 +24,6 @@
         <h1 class="logo">Log System</h1>
         <span id="ws-status" class="ws-badge disconnected">● Disconnected</span>
       </div>
-      <div class="header-right">
-        <label class="threshold-label">
-          Ngưỡng cảnh báo:
-          <input type="number" id="threshold-input" min="1" value="10">
-          <button onclick="updateThreshold()">Cập nhật</button>
-        </label>
-      </div>
     </div>
   </header>
 
@@ -55,6 +48,31 @@
     <div class="stat-card">
       <span class="stat-label">Cập nhật lúc</span>
       <span class="stat-value" id="stat-updated">—</span>
+    </div>
+  </div>
+
+  <!-- Alert Config -->
+  <div class="ops-strip">
+    <div class="alert-config-panel">
+      <div class="alert-config-head">
+        <span class="panel-title">Alert config</span>
+        <span id="config-status" class="config-status">Đang chờ WebSocket sync</span>
+      </div>
+      <div class="alert-config-fields">
+        <label class="config-field">
+          <span>Threshold</span>
+          <input type="number" id="threshold-input" min="1" value="10">
+        </label>
+        <label class="config-field">
+          <span>Window</span>
+          <input type="number" id="window-input" min="1" value="300">
+        </label>
+        <label class="config-field">
+          <span>Cooldown</span>
+          <input type="number" id="cooldown-input" min="1" value="60">
+        </label>
+        <button class="btn-primary" onclick="updateAlertConfig()">Cập nhật</button>
+      </div>
     </div>
   </div>
 
