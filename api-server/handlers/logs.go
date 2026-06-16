@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"strconv"
 	"time"
@@ -13,6 +12,9 @@ import (
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/gin-gonic/gin"
 )
+
+// esQueryTimeout — timeout cho mỗi query ES, tránh treo goroutine khi ES chậm
+const esQueryTimeout = 5 * time.Second
 
 // ---------------------------------------------------------------
 // LogHandler
@@ -75,8 +77,11 @@ func (h *LogHandler) GetLogs(c *gin.Context) {
 
 	bodyBytes, _ := json.Marshal(body)
 
+	ctx, cancel := context.WithTimeout(c.Request.Context(), esQueryTimeout)
+	defer cancel()
+
 	res, err := h.es.Search(
-		h.es.Search.WithContext(context.Background()),
+		h.es.Search.WithContext(ctx),
 		h.es.Search.WithIndex("logs-*"),
 		h.es.Search.WithBody(bytes.NewReader(bodyBytes)),
 	)
@@ -122,30 +127,13 @@ func (h *LogHandler) CountLogs(c *gin.Context) {
 	var total int64
 
 	for _, level := range levels {
-		query := buildLogsQuery(level, app, from, to, "")
-		body  := map[string]any{"query": query}
-		bodyBytes, _ := json.Marshal(body)
-
-		res, err := h.es.Count(
-			h.es.Count.WithContext(context.Background()),
-			h.es.Count.WithIndex("logs-*"),
-			h.es.Count.WithBody(bytes.NewReader(bodyBytes)),
-		)
+		count, err := h.countOneLevel(c.Request.Context(), level, app, from, to)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
-		defer res.Body.Close()
-
-		var countResp map[string]any
-		if err := json.NewDecoder(res.Body).Decode(&countResp); err != nil {
-			continue
-		}
-
-		if count, ok := countResp["count"].(float64); ok {
-			counts[level] = int64(count)
-			total += int64(count)
-		}
+		counts[level] = count
+		total += count
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -156,6 +144,44 @@ func (h *LogHandler) CountLogs(c *gin.Context) {
 		"from":  from,
 		"to":    to,
 	})
+}
+
+// countOneLevel — đếm log của 1 level. Tách ra hàm riêng để response body
+// được close ngay trong mỗi vòng lặp (defer trong for sẽ giữ tới khi
+// caller return, dễ leak khi index lớn / kết nối ES chậm).
+func (h *LogHandler) countOneLevel(parent context.Context, level, app, from, to string) (int64, error) {
+	query := buildLogsQuery(level, app, from, to, "")
+	bodyBytes, err := json.Marshal(map[string]any{"query": query})
+	if err != nil {
+		return 0, err
+	}
+
+	ctx, cancel := context.WithTimeout(parent, esQueryTimeout)
+	defer cancel()
+
+	res, err := h.es.Count(
+		h.es.Count.WithContext(ctx),
+		h.es.Count.WithIndex("logs-*"),
+		h.es.Count.WithBody(bytes.NewReader(bodyBytes)),
+	)
+	if err != nil {
+		return 0, err
+	}
+	defer res.Body.Close()
+
+	if res.IsError() {
+		return 0, fmt.Errorf("es count error: %s", res.Status())
+	}
+
+	var countResp map[string]any
+	if err := json.NewDecoder(res.Body).Decode(&countResp); err != nil {
+		return 0, err
+	}
+
+	if count, ok := countResp["count"].(float64); ok {
+		return int64(count), nil
+	}
+	return 0, nil
 }
 
 // ---------------------------------------------------------------
@@ -263,8 +289,3 @@ func parseIntDefault(s string, def int) int {
 	}
 	return def
 }
-
-// Đảm bảo time và fmt được dùng
-var _ = fmt.Sprintf
-var _ = time.Now
-var _ = io.Discard
