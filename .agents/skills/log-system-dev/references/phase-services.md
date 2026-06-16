@@ -10,16 +10,18 @@ Demo services exist only to generate logs for testing the pipeline.
 
 Do not change this format:
 
-```text
-[2024-01-15T10:23:11Z] [ERROR] [demo-node] Payment gateway timeout after 30s
+```json
+{"timestamp":"2024-01-15T10:23:11Z","level":"ERROR","service":"demo-node","message":"Payment gateway timeout after 30s","metadata":{"order_id":"789"}}
 ```
 
 Rules:
 
-- Timestamp is ISO8601 UTC.
-- Level is uppercase: `INFO`, `WARN`, or `ERROR`.
-- Service name has no spaces.
-- Message is free text after the third bracket.
+- Each line is one complete JSON object.
+- `timestamp` is ISO8601 UTC.
+- `level` is uppercase: `INFO`, `WARN`, or `ERROR`.
+- `service` has no spaces.
+- `message` is free text for dashboard display.
+- `metadata` is an object for extra fields.
 
 ## Runtime Behavior
 

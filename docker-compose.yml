@@ -69,7 +69,7 @@ services:
     healthcheck:
       test:
         - CMD-SHELL
-        - curl -s http://localhost:9600/_node/stats | grep -q "status"
+        - bash -lc 'exec 3<>/dev/tcp/127.0.0.1/9600'
       interval: 15s
       timeout: 10s
       retries: 10

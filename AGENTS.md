@@ -54,11 +54,12 @@ Demo services ghi log dạng JSON Lines, mỗi dòng là 1 JSON object:
 Logstash dùng `codec => json` để parse — không cần Grok cho format cơ bản.
 
 ### Grok — enrich phụ
-Sau khi parse JSON, Logstash dùng Grok để enrich thêm field từ `message`:
+Sau khi parse JSON, Logstash promote `message` thành `log_message`, rồi dùng Grok
+để enrich thêm field từ `log_message`:
 
 ```
-# Ví dụ: tách error_code từ message nếu có pattern
-grok { match => { "message" => "(?:%{WORD:error_code}:)?%{GREEDYDATA:error_detail}" } }
+# Ví dụ: tách error_code từ log_message nếu có pattern
+grok { match => { "log_message" => "(?:%{WORD:error_code}:)?%{GREEDYDATA:error_detail}" } }
 ```
 
 Grok lỗi parse không làm mất log — dùng `tag_on_failure => []` để bỏ qua silently.

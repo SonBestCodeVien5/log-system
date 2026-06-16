@@ -61,14 +61,15 @@ Demo services ghi mỗi dòng là 1 JSON object hoàn chỉnh:
 
 ### Grok — enrich phụ
 
-Sau khi parse JSON, Logstash dùng Grok để enrich thêm field từ `message`:
+Sau khi parse JSON, Logstash promote `message` thành `log_message`, rồi dùng Grok
+để enrich thêm field từ `log_message`:
 
 ```
 filter {
   # parse JSON trước
-  # Grok enrich thêm nếu message có pattern đặc biệt
+  # Grok enrich thêm nếu log_message có pattern đặc biệt
   grok {
-    match => { "message" => "(?:%{WORD:error_code}:)?%{GREEDYDATA:error_detail}" }
+    match => { "log_message" => "(?:%{WORD:error_code}:)?%{GREEDYDATA:error_detail}" }
     tag_on_failure => []  # bỏ qua silently nếu không match
   }
 }
@@ -119,7 +120,7 @@ Input raw JSON:  {"level":"ERROR","message":"Payment failed","service":"demo-nod
 Output enriched: {
   "level":     "ERROR",
   "service":   "demo-node",
-  "message":   "Payment failed",
+  "log_message": "Payment failed",
   "@timestamp": "2024-01-15T10:23:11Z",
   "error_code": "Payment",       ← thêm bởi Grok enrich
   "host":       "log-node-1"     ← thêm bởi Logstash

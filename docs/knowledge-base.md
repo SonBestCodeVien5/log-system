@@ -337,14 +337,14 @@ Docker image từ `scratch` + binary → image ~15MB thay vì ~500MB với JDK.
 
 ### Logstash JSON parse + Grok enrich
 
-Trong repo này, Grok **không phải parser chính**. Parser chính là JSON parse trong [`logstash/pipeline/logstash.conf`](../logstash/pipeline/logstash.conf#L18-L22). Sau đó Logstash promote field từ object `log` lên root trong [`mutate rename`](../logstash/pipeline/logstash.conf#L35-L44).
+Trong repo này, Grok **không phải parser chính**. Parser chính là JSON parse trong [`logstash/pipeline/logstash.conf`](../logstash/pipeline/logstash.conf#L18-L22). Sau đó Logstash promote field từ object `log` lên root trong [`mutate rename`](../logstash/pipeline/logstash.conf#L35-L44), gồm `level`, `service`, `log_message`, `metadata` và `@timestamp`.
 
-Grok chỉ enrich phụ từ `message`, ví dụ tách `error_code` nếu message có dạng `PAYMENT_FAILED: gateway timeout`:
+Grok chỉ enrich phụ từ `log_message`, ví dụ tách `error_code` nếu message có dạng `PAYMENT_FAILED: gateway timeout`:
 
 ```conf
 grok {
   match => {
-    "message" => "^(?:%{WORD:error_code}:\s*)?%{GREEDYDATA:error_detail}"
+    "log_message" => "^(?:%{WORD:error_code}:\s*)?%{GREEDYDATA:error_detail}"
   }
   tag_on_failure => []
 }

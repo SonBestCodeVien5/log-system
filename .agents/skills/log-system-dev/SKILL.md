@@ -31,9 +31,9 @@ Then load only the phase reference that matches the current task:
 
 Keep changes aligned with the repo's MVP architecture:
 
-- Demo services write standard log lines to `/logs/<service>/app.log`.
+- Demo services write JSON Lines to `/logs/<service>/app.log`.
 - Filebeat tails `/logs/**/*.log` and ships to Logstash.
-- Logstash parses `[timestamp] [LEVEL] [service] message` into Elasticsearch `logs-*`.
+- Logstash parses JSON Lines into Elasticsearch `logs-*`, then enriches `log_message` with Grok when patterns match.
 - Go API exposes REST and WebSocket endpoints for the dashboard.
 - Dashboard stays HTML, vanilla JS, and handwritten CSS only.
 
@@ -45,7 +45,7 @@ Use `.env` for runtime config. Do not hardcode passwords, ports, or hostnames in
 - Use `log.Printf` in Go server code; do not use `fmt.Println`.
 - Return JSON errors as `{"error":"..."}` from HTTP handlers.
 - Use `sync.RWMutex` for shared alerting state.
-- Keep log format unchanged because Grok depends on it.
+- Keep the demo service JSON Lines format unchanged because Logstash and the API/dashboard contract depend on it.
 - Update `go.mod` when adding Go dependencies.
 
 ## Context Handoff
