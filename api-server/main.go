@@ -69,21 +69,19 @@ func main() {
 	r.Use(middleware.CORS())
 
 	// API routes
+	logHandler   := handlers.NewLogHandler(esClient)
+	alertHandler := handlers.NewAlertHandler(engine)
+
 	api := r.Group("/api")
 	{
-		logHandler   := handlers.NewLogHandler(esClient)
-		alertHandler := handlers.NewAlertHandler(engine)
-
 		api.GET("/health",           healthCheck(esClient))
 		api.GET("/logs",             logHandler.GetLogs)
 		api.GET("/logs/count",       logHandler.CountLogs)
 		api.POST("/alerts/config",   alertHandler.UpdateConfig)
 	}
 
-	// WebSocket
-	r.GET("/ws/alerts", func(c *gin.Context) {
-		handlers.NewAlertHandler(engine).HandleWS(c)
-	})
+	// WebSocket — dùng chung alertHandler ở trên, không tạo lại mỗi request
+	r.GET("/ws/alerts", alertHandler.HandleWS)
 
 	// Dashboard — serve index.html tại root
 	r.GET("/", func(c *gin.Context) {
