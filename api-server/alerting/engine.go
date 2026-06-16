@@ -192,19 +192,23 @@ func (e *AlertEngine) GetConfig() AlertConfig {
 func (e *AlertEngine) RegisterClient(conn *websocket.Conn) {
 	e.clientsMu.Lock()
 	e.clients[conn] = true
+	total := len(e.clients)
 	e.clientsMu.Unlock()
-	log.Printf("[alerting] client connected, total=%d", len(e.clients))
+	log.Printf("[alerting] client connected, total=%d", total)
 }
 
 func (e *AlertEngine) UnregisterClient(conn *websocket.Conn) {
 	e.clientsMu.Lock()
 	delete(e.clients, conn)
+	total := len(e.clients)
 	e.clientsMu.Unlock()
-	log.Printf("[alerting] client disconnected, total=%d", len(e.clients))
+	log.Printf("[alerting] client disconnected, total=%d", total)
 }
 
 // ---------------------------------------------------------------
 // broadcast — gửi alert tới tất cả WebSocket clients
+// Conn nào ghi lỗi sẽ bị đóng và xóa khỏi danh sách, tránh tích lũy
+// kết nối chết (peer đã disconnect nhưng read goroutine chưa kịp gỡ).
 // ---------------------------------------------------------------
 func (e *AlertEngine) broadcast(msg AlertMessage) {
 	data, err := json.Marshal(msg)
@@ -213,15 +217,38 @@ func (e *AlertEngine) broadcast(msg AlertMessage) {
 		return
 	}
 
+	// Snapshot danh sách conn dưới RLock để không giữ lock trong khi
+	// gọi WriteMessage (có thể block bởi network).
 	e.clientsMu.RLock()
-	defer e.clientsMu.RUnlock()
+	conns := make([]*websocket.Conn, 0, len(e.clients))
+	for c := range e.clients {
+		conns = append(conns, c)
+	}
+	e.clientsMu.RUnlock()
 
-	for conn := range e.clients {
+	var dead []*websocket.Conn
+	for _, conn := range conns {
 		if err := conn.WriteMessage(websocket.TextMessage, data); err != nil {
-			log.Printf("[alerting] write error: %v", err)
+			log.Printf("[alerting] write error, dropping client: %v", err)
+			dead = append(dead, conn)
 		}
 	}
+
+	if len(dead) == 0 {
+		return
+	}
+
+	e.clientsMu.Lock()
+	for _, conn := range dead {
+		delete(e.clients, conn)
+		_ = conn.Close()
+	}
+	e.clientsMu.Unlock()
 }
+
+// countErrorsTimeout — timeout cho query đếm trong sliding window.
+// Ngắn hơn check interval mặc định (10s) để không chèn lên vòng kế.
+const countErrorsTimeout = 5 * time.Second
 
 // ---------------------------------------------------------------
 // countErrors — query ES đếm ERROR trong window seconds gần nhất
@@ -249,8 +276,11 @@ func (e *AlertEngine) countErrors(windowSeconds int) (int64, error) {
 
 	bodyBytes, _ := json.Marshal(query)
 
+	ctx, cancel := context.WithTimeout(context.Background(), countErrorsTimeout)
+	defer cancel()
+
 	res, err := e.es.Count(
-		e.es.Count.WithContext(context.Background()),
+		e.es.Count.WithContext(ctx),
 		e.es.Count.WithIndex("logs-*"),
 		e.es.Count.WithBody(bytes.NewReader(bodyBytes)),
 	)
@@ -258,6 +288,10 @@ func (e *AlertEngine) countErrors(windowSeconds int) (int64, error) {
 		return 0, err
 	}
 	defer res.Body.Close()
+
+	if res.IsError() {
+		return 0, fmt.Errorf("es count error: %s", res.Status())
+	}
 
 	var result map[string]any
 	if err := json.NewDecoder(res.Body).Decode(&result); err != nil {
@@ -288,6 +322,3 @@ func getEnvInt(key string, fallback int) int {
 	}
 	return fallback
 }
-
-// Placeholder để tránh unused import
-var fmt_placeholder = fmt.Sprintf
