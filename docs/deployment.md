@@ -24,10 +24,15 @@ cd log-system
 ### Bước 2 — Cấu hình
 
 ```bash
+# Tùy chọn: chỉ cần tạo .env nếu muốn override default trong docker-compose.yml
 cp .env.example .env
 ```
 
-Chỉnh sửa `.env` nếu cần:
+File `.env` là **tùy chọn** trong môi trường dev hiện tại. Nếu không tạo `.env`,
+Docker Compose vẫn chạy bằng các default trong `docker-compose.yml`, ví dụ
+`${ES_PASSWORD:-changeme123}` và `${API_PORT:-8080}`.
+
+Chỉ cần tạo/chỉnh sửa `.env` nếu muốn override default:
 
 ```bash
 ES_PASSWORD=changeme123        # đổi password
@@ -62,10 +67,10 @@ Lần đầu pull image ES + Logstash khoảng 5–10 phút tùy mạng.
 
 ```bash
 # ES có sẵn sàng không?
-curl http://localhost:9200/_cluster/health
+curl -u elastic:${ES_PASSWORD:-changeme123} http://localhost:9200/_cluster/health
 
 # Log đã vào ES chưa?
-curl "http://localhost:9200/logs-*/_count"
+curl -u elastic:${ES_PASSWORD:-changeme123} "http://localhost:9200/logs-*/_count"
 
 # API có chạy không?
 curl http://localhost:8080/api/health
@@ -103,7 +108,7 @@ http://localhost:8080
 **Deliverable đo được:**
 ```bash
 # Chạy lệnh này, kết quả count > 0 là thành công
-curl "http://localhost:9200/logs-*/_count"
+curl -u elastic:${ES_PASSWORD:-changeme123} "http://localhost:9200/logs-*/_count"
 # {"count": 127, ...}
 ```
 
@@ -176,7 +181,8 @@ test clone sạch trước khi bảo vệ.
 # Test từ repo mới clone — không được quá 5 phút
 git clone git@github.com:SonBestCodeVien5/log-system.git fresh-test
 cd fresh-test
-cp .env.example .env
+# Tùy chọn nếu muốn override default:
+# cp .env.example .env
 sudo sysctl -w vm.max_map_count=262144
 docker compose up -d
 # Mở browser → http://localhost:8080 → thấy dashboard
@@ -238,7 +244,7 @@ docker compose down -v
 
 ```bash
 # 1. ES có chạy không?
-curl http://localhost:9200/_cluster/health
+curl -u elastic:${ES_PASSWORD:-changeme123} http://localhost:9200/_cluster/health
 
 # 2. Logstash nhận data không?
 docker compose logs logstash | grep -E "events|error"
@@ -253,7 +259,7 @@ ls -la ./logs/demo-node/ ./logs/demo-go/
 docker compose logs logstash | grep "json parse"
 
 # 6. ES có index chưa?
-curl "http://localhost:9200/_cat/indices?v"
+curl -u elastic:${ES_PASSWORD:-changeme123} "http://localhost:9200/_cat/indices?v"
 ```
 
 ### Elasticsearch không start
@@ -266,7 +272,7 @@ docker compose restart elasticsearch
 
 ### API không kết nối được ES
 
-Kiểm tra `ES_PASSWORD` trong `.env` khớp với lúc khởi tạo ES.
+Kiểm tra `ES_PASSWORD` trong `.env` hoặc default `changeme123` có khớp với lúc khởi tạo ES không.
 Nếu đã đổi password sau khi ES đã chạy:
 
 ```bash

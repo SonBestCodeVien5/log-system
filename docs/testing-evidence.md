@@ -63,7 +63,7 @@ Thứ tự verify chi tiết theo tuần nằm ở
   ```bash
   curl -s -X POST http://localhost:8080/api/alerts/config \
     -H "Content-Type: application/json" \
-    -d '{"threshold": 5}' | python3 -m json.tool
+    -d '{"threshold":5,"window_seconds":300,"cooldown_seconds":60}' | python3 -m json.tool
 
   docker compose logs api-server | grep -i alert
   ```
