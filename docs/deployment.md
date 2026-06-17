@@ -198,9 +198,9 @@ docker compose up -d
 
 | Metric | Cơ chế đảm bảo | Kết quả đo thực tế |
 |---|---|---|
-| Query response time | ES inverted index + index theo ngày | Đo sau tuần 2 |
-| Dashboard load time | Pagination 20 record/trang | Đo sau tuần 3 |
-| Alert detection latency | Check interval = `ALERT_CHECK_INTERVAL_SECONDS` | Tối đa = interval value |
+| Query response time | ES inverted index + index theo ngày | 2026-06-17: `/api/logs?size=100` trả HTTP 200 trong `0.033992s`; `/api/health` trả HTTP 200 trong `0.007250s` |
+| Dashboard load time | Pagination 20 record/trang | 2026-06-17: dashboard `/` trả HTTP 200 trong `0.012889s` |
+| Alert detection latency | Check interval = `ALERT_CHECK_INTERVAL_SECONDS` | 2026-06-17: incident replay được ingest (`total: 20`); alert sent quan sát sau ~33s vì cooldown trước đó còn active |
 | Log durability | Filebeat registry | Không mất log khi restart |
 
 ### Lệnh đo cần chạy ở Bước 10
