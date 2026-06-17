@@ -48,12 +48,18 @@ Track screenshots, command outputs, demo flows, or diagrams that should be captu
 
 1. Mở dashboard tại `http://localhost:8080` và chỉ ra log đang được refresh tự động.
 2. Filter `ERROR`, sau đó filter `demo-node`, để chứng minh API query và filter hoạt động.
-3. Giảm threshold cảnh báo xuống `5` bằng input trên dashboard.
-4. Chờ 10-15 giây, khi banner đỏ xuất hiện thì giải thích WebSocket nhận alert realtime.
+3. Giảm threshold cảnh báo xuống `5` bằng input trên dashboard hoặc `POST /api/alerts/config`.
+4. Chạy `./scripts/trigger-error-spike.sh 20` để tạo incident replay, rồi chờ banner đỏ xuất hiện và giải thích WebSocket nhận alert realtime.
 5. Mở `api-server/alerting/engine.go` và giải thích ngắn:
    - Sliding window đếm ERROR trong khoảng thời gian gần nhất.
    - Deduplication tránh gửi alert lặp liên tục.
    - Dynamic threshold cho phép đổi ngưỡng mà không restart server.
+
+## Incident Replay
+
+Script `scripts/trigger-error-spike.sh` ghi nhiều dòng ERROR JSON Lines vào
+`./logs/demo-node/app.log`, đúng path Filebeat đang tail. Đây là kịch bản demo
+chủ động để chứng minh alerting phát hiện spike lỗi mà không cần chờ log random.
 
 ## Câu Hỏi Cần Ôn Trước Khi Bảo Vệ
 

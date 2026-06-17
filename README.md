@@ -259,6 +259,21 @@ curl -X POST "http://localhost:8080/api/alerts/config" \
   -d '{"threshold":5,"window_seconds":300,"cooldown_seconds":60}'
 ```
 
+Endpoint này cũng hỗ trợ cập nhật từng field khi demo nhanh:
+
+```bash
+curl -X POST "http://localhost:8080/api/alerts/config" \
+  -H "Content-Type: application/json" \
+  -d '{"threshold":5}'
+```
+
+Tạo spike lỗi chủ động để test alerting:
+
+```bash
+./scripts/trigger-error-spike.sh 20
+docker compose logs api-server | grep -i alert
+```
+
 Chi tiết contract API nằm trong `docs/api.md`.
 
 <a id="van-hanh-thuong-ngay"></a>

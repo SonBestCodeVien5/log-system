@@ -91,6 +91,99 @@ func TestUpdateConfigAcceptsCompletePositiveConfig(t *testing.T) {
 	}
 }
 
+func TestUpdateConfigAcceptsPartialThresholdConfig(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	setDefaultAlertEnv(t)
+
+	engine := alerting.NewEngine(nil)
+	handler := NewAlertHandler(engine)
+	router := gin.New()
+	router.POST("/api/alerts/config", handler.UpdateConfig)
+
+	req := httptest.NewRequest(
+		http.MethodPost,
+		"/api/alerts/config",
+		strings.NewReader(`{"threshold":5}`),
+	)
+	req.Header.Set("Content-Type", "application/json")
+
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body=%s", w.Code, http.StatusOK, w.Body.String())
+	}
+
+	cfg := engine.GetConfig()
+	if cfg.Threshold != 5 || cfg.WindowSeconds != 300 || cfg.CooldownSeconds != 60 {
+		t.Fatalf("config = %+v, want threshold=5 window=300 cooldown=60", cfg)
+	}
+}
+
+func TestUpdateConfigPreservesPriorPartialUpdates(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	setDefaultAlertEnv(t)
+
+	engine := alerting.NewEngine(nil)
+	handler := NewAlertHandler(engine)
+	router := gin.New()
+	router.POST("/api/alerts/config", handler.UpdateConfig)
+
+	sendConfig := func(body string) {
+		t.Helper()
+		req := httptest.NewRequest(
+			http.MethodPost,
+			"/api/alerts/config",
+			strings.NewReader(body),
+		)
+		req.Header.Set("Content-Type", "application/json")
+
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+
+		if w.Code != http.StatusOK {
+			t.Fatalf("status = %d, want %d; body=%s", w.Code, http.StatusOK, w.Body.String())
+		}
+	}
+
+	sendConfig(`{"threshold":5}`)
+	sendConfig(`{"window_seconds":120}`)
+
+	cfg := engine.GetConfig()
+	if cfg.Threshold != 5 || cfg.WindowSeconds != 120 || cfg.CooldownSeconds != 60 {
+		t.Fatalf("config = %+v, want threshold=5 window=120 cooldown=60", cfg)
+	}
+}
+
+func TestUpdateConfigRejectsEmptyConfig(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	setDefaultAlertEnv(t)
+
+	engine := alerting.NewEngine(nil)
+	handler := NewAlertHandler(engine)
+	router := gin.New()
+	router.POST("/api/alerts/config", handler.UpdateConfig)
+
+	req := httptest.NewRequest(
+		http.MethodPost,
+		"/api/alerts/config",
+		strings.NewReader(`{}`),
+	)
+	req.Header.Set("Content-Type", "application/json")
+
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d; body=%s", w.Code, http.StatusBadRequest, w.Body.String())
+	}
+
+	cfg := engine.GetConfig()
+	if cfg.Threshold != 10 || cfg.WindowSeconds != 300 || cfg.CooldownSeconds != 60 {
+		t.Fatalf("config changed after empty request: %+v", cfg)
+	}
+}
+
 func setDefaultAlertEnv(t *testing.T) {
 	t.Helper()
 	t.Setenv("ALERT_THRESHOLD", "10")

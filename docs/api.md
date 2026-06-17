@@ -93,6 +93,14 @@ Cập nhật cấu hình alerting động, không cần restart server.
 }
 ```
 
+Có thể gửi một hoặc nhiều field. Field bị bỏ qua sẽ giữ giá trị hiện tại:
+
+```json
+{ "threshold": 5 }
+```
+
+Các field nếu được gửi phải là số nguyên `>= 1`; body rỗng `{}` bị từ chối.
+
 **Response:**
 ```json
 {

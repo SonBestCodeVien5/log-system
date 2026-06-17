@@ -15,6 +15,12 @@ type AlertHandler struct {
 	engine *alerting.AlertEngine
 }
 
+type alertConfigRequest struct {
+	Threshold       *int `json:"threshold"`
+	WindowSeconds   *int `json:"window_seconds"`
+	CooldownSeconds *int `json:"cooldown_seconds"`
+}
+
 func NewAlertHandler(engine *alerting.AlertEngine) *AlertHandler {
 	return &AlertHandler{engine: engine}
 }
@@ -62,23 +68,38 @@ func (h *AlertHandler) HandleWS(c *gin.Context) {
 // Dashboard gửi threshold mới — Dynamic Threshold
 // ---------------------------------------------------------------
 func (h *AlertHandler) UpdateConfig(c *gin.Context) {
-	var cfg alerting.AlertConfig
-	if err := c.ShouldBindJSON(&cfg); err != nil {
+	var req alertConfigRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid config: " + err.Error()})
 		return
 	}
 
-	if cfg.Threshold < 1 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "threshold must be >= 1"})
+	if req.Threshold == nil && req.WindowSeconds == nil && req.CooldownSeconds == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "at least one config field is required"})
 		return
 	}
-	if cfg.WindowSeconds < 1 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "window_seconds must be >= 1"})
-		return
+
+	var cfg alerting.AlertConfig
+	if req.Threshold != nil {
+		if *req.Threshold < 1 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "threshold must be >= 1"})
+			return
+		}
+		cfg.Threshold = *req.Threshold
 	}
-	if cfg.CooldownSeconds < 1 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "cooldown_seconds must be >= 1"})
-		return
+	if req.WindowSeconds != nil {
+		if *req.WindowSeconds < 1 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "window_seconds must be >= 1"})
+			return
+		}
+		cfg.WindowSeconds = *req.WindowSeconds
+	}
+	if req.CooldownSeconds != nil {
+		if *req.CooldownSeconds < 1 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "cooldown_seconds must be >= 1"})
+			return
+		}
+		cfg.CooldownSeconds = *req.CooldownSeconds
 	}
 
 	h.engine.UpdateConfig(cfg)

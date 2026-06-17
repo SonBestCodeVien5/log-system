@@ -208,7 +208,10 @@ Code thật nằm ở [`shouldAlert`](../api-server/alerting/engine.go#L141-L153
 **Vấn đề giải quyết:** Thay đổi ngưỡng cảnh báo mà không cần restart server.
 
 **Cách làm:** Dashboard gửi config mới bằng REST `POST /api/alerts/config`,
-handler gọi `UpdateConfig`, goroutine alerting đọc giá trị mới ở lần check tiếp theo.
+handler validate các field được gửi rồi gọi `UpdateConfig`. Engine chỉ cập nhật
+các field có giá trị dương, nên partial update như `{"threshold":5}` giữ nguyên
+`window_seconds` và `cooldown_seconds`. Goroutine alerting đọc giá trị mới ở lần
+check tiếp theo.
 
 **Khái niệm cần biết:** shared state của alerting engine cần mutex. Code hiện tại dùng một `sync.Mutex` cho config và dedup map để đơn giản và atomic.
 
@@ -229,7 +232,7 @@ func (e *AlertEngine) UpdateConfig(cfg AlertConfig) {
 }
 ```
 
-Code thật nằm ở [`UpdateConfig`](../api-server/alerting/engine.go#L158-L174), [`POST /api/alerts/config`](../api-server/handlers/alerts.go#L64-L82), và dashboard gọi API trong [`updateThreshold`](../dashboard/app.js#L235-L255).
+Code thật nằm ở [`UpdateConfig`](../api-server/alerting/engine.go#L158-L174), [`POST /api/alerts/config`](../api-server/handlers/alerts.go), và dashboard gọi API trong [`updateAlertConfig`](../dashboard/app.js).
 
 ### Trạng thái implement hiện tại
 1. Sliding Window — đã implement.

@@ -98,7 +98,9 @@ curl "http://localhost:8080/api/logs/count"
 ```bash
 curl -s -X POST http://localhost:8080/api/alerts/config \
   -H "Content-Type: application/json" \
-  -d '{"threshold":5,"window_seconds":300,"cooldown_seconds":60}'
+  -d '{"threshold":5}'
+
+./scripts/trigger-error-spike.sh 20
 ```
 
 ```bash
@@ -276,7 +278,9 @@ Chọn **hướng A** cho dự án tốt nghiệp 1 tháng. Nó đủ tạo dấ
 ```bash
 curl -s -X POST http://localhost:8080/api/alerts/config \
   -H "Content-Type: application/json" \
-  -d '{"threshold":5,"window_seconds":300,"cooldown_seconds":60}'
+  -d '{"threshold":5}'
+
+./scripts/trigger-error-spike.sh 20
 ```
 
 ```bash

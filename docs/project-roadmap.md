@@ -64,7 +64,13 @@ curl -s -X POST http://localhost:8080/api/alerts/config \
   -d '{"threshold": 5}' | python3 -m json.tool
 ```
 
-Chờ 10-15 giây rồi kiểm tra log:
+Tạo spike ERROR chủ động, không phụ thuộc log random:
+
+```bash
+./scripts/trigger-error-spike.sh 20
+```
+
+Chờ khoảng `ALERT_CHECK_INTERVAL_SECONDS` giây rồi kiểm tra log:
 
 ```bash
 docker compose logs api-server | grep -i alert
