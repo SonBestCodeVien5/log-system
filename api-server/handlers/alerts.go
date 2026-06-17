@@ -72,11 +72,19 @@ func (h *AlertHandler) UpdateConfig(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "threshold must be >= 1"})
 		return
 	}
+	if cfg.WindowSeconds < 1 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "window_seconds must be >= 1"})
+		return
+	}
+	if cfg.CooldownSeconds < 1 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "cooldown_seconds must be >= 1"})
+		return
+	}
 
 	h.engine.UpdateConfig(cfg)
 
 	c.JSON(http.StatusOK, gin.H{
-		"status":  "updated",
-		"config":  h.engine.GetConfig(),
+		"status": "updated",
+		"config": h.engine.GetConfig(),
 	})
 }
