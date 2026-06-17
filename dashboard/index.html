@@ -51,31 +51,6 @@
     </div>
   </div>
 
-  <!-- Alert Config -->
-  <div class="ops-strip">
-    <div class="alert-config-panel">
-      <div class="alert-config-head">
-        <span class="panel-title">Alert config</span>
-        <span id="config-status" class="config-status">Đang chờ WebSocket sync</span>
-      </div>
-      <div class="alert-config-fields">
-        <label class="config-field">
-          <span>Threshold</span>
-          <input type="number" id="threshold-input" min="1" value="10">
-        </label>
-        <label class="config-field">
-          <span>Window</span>
-          <input type="number" id="window-input" min="1" value="300">
-        </label>
-        <label class="config-field">
-          <span>Cooldown</span>
-          <input type="number" id="cooldown-input" min="1" value="60">
-        </label>
-        <button class="btn-primary" onclick="updateAlertConfig()">Cập nhật</button>
-      </div>
-    </div>
-  </div>
-
   <!-- Filter Bar -->
   <div class="filter-bar">
     <div class="filter-group">
@@ -97,13 +72,32 @@
 
       <button onclick="applyFilter()">Tìm</button>
       <button onclick="resetFilter()" class="btn-secondary">Xóa filter</button>
-    </div>
-
-    <div class="filter-right">
       <label class="auto-refresh-label">
         <input type="checkbox" id="auto-refresh" checked>
         Tự động refresh (10s)
       </label>
+    </div>
+
+    <div class="ops-group">
+      <div class="alert-config-panel" aria-label="Alert config">
+        <span class="panel-title">Alert</span>
+        <div class="alert-config-fields">
+          <label class="config-field">
+            <span>Ngưỡng</span>
+            <input type="number" id="threshold-input" min="1" value="10">
+          </label>
+          <label class="config-field">
+            <span>Window</span>
+            <input type="number" id="window-input" min="1" value="300">
+          </label>
+          <label class="config-field">
+            <span>Cooldown</span>
+            <input type="number" id="cooldown-input" min="1" value="60">
+          </label>
+          <button class="btn-primary" onclick="updateAlertConfig()">Cập nhật</button>
+        </div>
+        <span id="config-status" class="config-status">Chờ sync</span>
+      </div>
     </div>
   </div>
 

@@ -3,6 +3,10 @@
    ============================================================ */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+:root {
+  --content-max: 1200px;
+}
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-size: 14px;
@@ -30,7 +34,7 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
-  max-width: 1400px;
+  max-width: var(--content-max);
   margin: 0 auto;
 }
 
@@ -67,7 +71,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  max-width: 1400px;
+  max-width: var(--content-max);
   margin: 0 auto;
   gap: 16px;
   flex-wrap: wrap;
@@ -91,27 +95,16 @@ body {
 .ws-badge.connected    { background: #dcfce7; color: #166534; }
 .ws-badge.disconnected { background: #fee2e2; color: #991b1b; }
 
-.ops-strip {
-  padding: 0 24px 12px;
-  max-width: 1400px;
-  margin: 0 auto;
-}
-
 .alert-config-panel {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 12px 14px;
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-}
-
-.alert-config-head {
-  display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  flex: 0 1 900px;
+  gap: 8px;
+  min-width: 0;
+  padding: 4px 8px;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
 }
 
 .panel-title {
@@ -119,7 +112,7 @@ body {
   font-weight: 600;
   color: #6b7280;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0;
   white-space: nowrap;
 }
 
@@ -139,7 +132,8 @@ body {
 }
 
 .config-field input[type="number"] {
-  width: 96px;
+  width: 90px;
+  height: 29px;
   padding: 6px 10px;
   border: 1px solid #d1d5db;
   border-radius: 6px;
@@ -153,7 +147,8 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  min-width: 0;
 }
 
 .alert-config-panel .btn-primary {
@@ -164,14 +159,16 @@ body {
   cursor: pointer;
   background: #111;
   color: #fff;
-  height: 34px;
+  height: 29px;
   white-space: nowrap;
 }
 
 .alert-config-panel .btn-primary:hover { background: #333; }
 
 .config-status {
+  margin-left: auto;
   min-width: 0;
+  max-width: 180px;
   font-size: 12px;
   color: #6b7280;
   white-space: nowrap;
@@ -190,7 +187,7 @@ body {
   display: flex;
   gap: 12px;
   padding: 16px 24px;
-  max-width: 1400px;
+  max-width: var(--content-max);
   margin: 0 auto;
   flex-wrap: wrap;
 }
@@ -228,11 +225,11 @@ body {
    ============================================================ */
 .filter-bar {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 0 24px 12px;
-  max-width: 1400px;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 8px 12px;
+  padding: 0 24px 8px;
+  max-width: var(--content-max);
   margin: 0 auto;
   flex-wrap: wrap;
 }
@@ -257,7 +254,7 @@ body {
 .filter-group input[type="text"] { width: 220px; }
 
 .filter-group button,
-.filter-right button {
+.ops-group button {
   padding: 6px 14px;
   border: 1px solid #d1d5db;
   border-radius: 6px;
@@ -276,7 +273,14 @@ body {
 
 .filter-group .btn-secondary:hover { background: #f3f4f6; }
 
-.filter-right { display: flex; align-items: center; gap: 8px; }
+.ops-group {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  min-width: 0;
+  flex: 1 1 100%;
+}
 
 .auto-refresh-label {
   display: flex;
@@ -292,7 +296,7 @@ body {
    ============================================================ */
 .table-container {
   padding: 0 24px;
-  max-width: 1400px;
+  max-width: var(--content-max);
   margin: 0 auto;
   overflow-x: auto;
 }
@@ -358,7 +362,7 @@ body {
   align-items: center;
   gap: 12px;
   padding: 16px 24px;
-  max-width: 1400px;
+  max-width: var(--content-max);
   margin: 0 auto;
 }
 
@@ -407,8 +411,7 @@ button:hover { background: #f3f4f6; }
   .stats-bar,
   .filter-bar,
   .table-container,
-  .pagination,
-  .ops-strip {
+  .pagination {
     padding-left: 14px;
     padding-right: 14px;
   }
@@ -429,18 +432,21 @@ button:hover { background: #f3f4f6; }
     padding: 10px 12px;
   }
 
-  .alert-config-panel,
-  .filter-group {
+  .filter-group,
+  .ops-group {
     width: 100%;
   }
 
-  .alert-config-head {
+  .ops-group {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 8px;
   }
 
   .alert-config-fields {
     width: 100%;
+    flex-wrap: wrap;
   }
 
   .filter-group select,
@@ -449,15 +455,32 @@ button:hover { background: #f3f4f6; }
     width: 100%;
   }
 
-  .filter-right {
+  .config-field input[type="number"] {
     width: 100%;
   }
 
-  .config-field input[type="number"] {
-    width: 100px;
+  .alert-config-panel,
+  .alert-config-panel .btn-primary {
+    width: 100%;
   }
 
-  .alert-config-panel .btn-primary {
+  .alert-config-panel {
+    flex: 0 1 auto;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    padding: 8px;
+  }
+
+  .config-field {
+    flex: 1 1 0;
+    min-width: 0;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .config-status {
+    margin-left: 0;
     width: 100%;
   }
 }

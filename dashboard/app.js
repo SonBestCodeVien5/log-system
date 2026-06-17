@@ -227,7 +227,7 @@ function connectWebSocket() {
       if (msg.type === "config") {
         // Cập nhật các input config theo trạng thái hiện tại
         setAlertConfigInputs(msg.config);
-        setConfigStatus("Đã đồng bộ cấu hình hiện tại", "ok");
+        setConfigStatus("Đã đồng bộ", "ok");
       }
     } catch (_) {}
   };
@@ -300,10 +300,7 @@ async function updateAlertConfig() {
     }
     if (data.status === "updated") {
       setAlertConfigInputs(data.config || {});
-      setConfigStatus(
-        `Đã cập nhật: threshold ${threshold}, window ${windowSeconds}s, cooldown ${cooldownSeconds}s`,
-        "ok"
-      );
+      setConfigStatus("Đã cập nhật", "ok");
     }
   } catch (err) {
     setConfigStatus("Lỗi khi cập nhật cấu hình: " + err.message, "error");
