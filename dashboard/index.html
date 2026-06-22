@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Log System — Dashboard</title>
-  <link rel="stylesheet" href="/assets/style.css">
+  <link rel="stylesheet" href="/assets/style.css?v=time-range-20260622">
 </head>
 <body>
 
@@ -67,6 +67,16 @@
         <option value="demo-go">demo-go</option>
       </select>
 
+      <label class="time-field" for="filter-from">
+        <span>Từ</span>
+        <input type="datetime-local" id="filter-from" step="1">
+      </label>
+
+      <label class="time-field" for="filter-to">
+        <span>Đến</span>
+        <input type="datetime-local" id="filter-to" step="1">
+      </label>
+
       <input type="text" id="filter-search"
         placeholder="Tìm kiếm trong message...">
 
@@ -76,6 +86,7 @@
         <input type="checkbox" id="auto-refresh" checked>
         Tự động refresh (10s)
       </label>
+      <span id="filter-error" class="filter-error" role="alert" aria-live="polite"></span>
     </div>
 
     <div class="ops-group">
@@ -128,6 +139,6 @@
     <span id="total-info" class="total-info"></span>
   </div>
 
-  <script src="/assets/app.js"></script>
+  <script src="/assets/app.js?v=time-range-20260622"></script>
 </body>
 </html>

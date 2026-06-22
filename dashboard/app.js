@@ -19,13 +19,22 @@ let currentPage  = 1;
 let totalLogs    = 0;
 let ws           = null;
 let refreshTimer = null;
+let usesSlidingTimeRange = true;
 
 // ---------------------------------------------------------------
 // Init
 // ---------------------------------------------------------------
 document.addEventListener("DOMContentLoaded", () => {
-  fetchLogs();
-  fetchStats();
+  setDefaultTimeRange();
+
+  ["filter-from", "filter-to"].forEach(id => {
+    document.getElementById(id).addEventListener("input", () => {
+      usesSlidingTimeRange = false;
+      setFilterError("");
+    });
+  });
+
+  refreshDashboard({ advanceTimeRange: false });
   connectWebSocket();
   startAutoRefresh();
 
@@ -51,6 +60,8 @@ document.addEventListener("DOMContentLoaded", () => {
 // ---------------------------------------------------------------
 async function fetchLogs() {
   const params = buildParams();
+  if (!params) return;
+
   params.set("page", currentPage);
   params.set("size", PAGE_SIZE);
 
@@ -73,7 +84,11 @@ async function fetchLogs() {
 // ---------------------------------------------------------------
 async function fetchStats() {
   const params = new URLSearchParams();
-  params.set("from", "now-1h");
+  const timeRange = getTimeRange();
+  if (!timeRange) return;
+
+  params.set("from", timeRange.from);
+  params.set("to", timeRange.to);
   const app = document.getElementById("filter-app").value;
   if (app) params.set("app", app);
 
@@ -162,24 +177,81 @@ function buildParams() {
   const level  = document.getElementById("filter-level").value;
   const app    = document.getElementById("filter-app").value;
   const q      = document.getElementById("filter-search").value.trim();
+  const timeRange = getTimeRange();
+
+  if (!timeRange) return null;
 
   if (level) params.set("level", level);
   if (app)   params.set("app",   app);
   if (q)     params.set("q",     q);
+  params.set("from", timeRange.from);
+  params.set("to", timeRange.to);
   return params;
 }
 
 function applyFilter() {
+  if (!getTimeRange()) return;
+
   currentPage = 1;
-  fetchLogs();
-  fetchStats();
+  refreshDashboard();
 }
 
 function resetFilter() {
   document.getElementById("filter-level").value  = "";
   document.getElementById("filter-app").value    = "";
   document.getElementById("filter-search").value = "";
+  usesSlidingTimeRange = true;
+  setDefaultTimeRange();
   currentPage = 1;
+  refreshDashboard({ advanceTimeRange: false });
+}
+
+function setDefaultTimeRange() {
+  const now = new Date();
+  const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+
+  document.getElementById("filter-from").value = toLocalDateTimeValue(oneHourAgo);
+  document.getElementById("filter-to").value = toLocalDateTimeValue(now);
+  setFilterError("");
+}
+
+function getTimeRange() {
+  const fromValue = document.getElementById("filter-from").value;
+  const toValue = document.getElementById("filter-to").value;
+
+  if (!fromValue || !toValue) {
+    setFilterError("Vui lòng chọn đầy đủ thời gian Từ và Đến.");
+    return null;
+  }
+
+  const from = new Date(fromValue);
+  const to = new Date(toValue);
+
+  if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) {
+    setFilterError("Khoảng thời gian không hợp lệ.");
+    return null;
+  }
+
+  if (from > to) {
+    setFilterError("Thời gian Từ phải sớm hơn hoặc bằng thời gian Đến.");
+    return null;
+  }
+
+  setFilterError("");
+  return { from: from.toISOString(), to: to.toISOString() };
+}
+
+function toLocalDateTimeValue(date) {
+  const timezoneOffset = date.getTimezoneOffset() * 60 * 1000;
+  return new Date(date.getTime() - timezoneOffset).toISOString().slice(0, 19);
+}
+
+function setFilterError(message) {
+  document.getElementById("filter-error").textContent = message;
+}
+
+function refreshDashboard({ advanceTimeRange = true } = {}) {
+  if (advanceTimeRange && usesSlidingTimeRange) setDefaultTimeRange();
   fetchLogs();
   fetchStats();
 }
@@ -189,10 +261,7 @@ function resetFilter() {
 // ---------------------------------------------------------------
 function startAutoRefresh() {
   stopAutoRefresh();
-  refreshTimer = setInterval(() => {
-    fetchLogs();
-    fetchStats();
-  }, 10000);
+  refreshTimer = setInterval(refreshDashboard, 10000);
 }
 
 function stopAutoRefresh() {
@@ -220,8 +289,8 @@ function connectWebSocket() {
           `⚠ ${msg.count} lỗi trong ${msg.window} vừa qua` +
           ` (ngưỡng: ${msg.threshold})`
         );
-        // Refresh stats ngay khi nhận alert
-        fetchStats();
+        // Tiến sliding range một lần rồi refresh đồng bộ bảng và stats.
+        refreshDashboard();
       }
 
       if (msg.type === "config") {
