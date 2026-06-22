@@ -16,7 +16,7 @@ Thứ tự verify chi tiết theo tuần nằm ở
 
 ## Current Evidence
 
-### Bước 10 - End-to-end verification plan
+### Bước 10 - Kết quả end-to-end
 
 - Feature: Dashboard static serving
 - Command or scenario:
@@ -84,3 +84,44 @@ Thứ tự verify chi tiết theo tuần nằm ở
 - Actual result: Pass ngày 2026-06-17. `curl -s -o /tmp/log-system-api-logs-100.json -w "%{http_code} %{time_total}\n" "http://localhost:8080/api/logs?size=100"` trả `200 0.033992`; `curl -s -o /tmp/log-system-api-health.json -w "%{http_code} %{time_total}\n" http://localhost:8080/api/health` trả `200 0.007250`.
 - Status: Pass
 - Notes: Số liệu đo bằng `curl` trên máy dev hiện tại; không phải benchmark tải nặng.
+
+### Rà soát chốt MVP ngày 2026-06-22
+
+- Feature: Compose runtime health
+- Command or scenario: `docker compose ps`
+- Expected result: Elasticsearch, Logstash, Filebeat, demo-node, demo-go và api-server đều chạy; service có healthcheck ở trạng thái healthy.
+- Actual result: Cả sáu service đều `Up`; sáu service đều báo `healthy`.
+- Status: Pass
+- Notes: Đây là kiểm tra đọc trạng thái, không rebuild hoặc thay đổi container.
+
+- Feature: Dashboard runtime
+- Command or scenario: Mở `http://localhost:8080` bằng browser và kiểm tra accessibility snapshot, console, network.
+- Expected result: WebSocket connected; stats, table và pagination có data; REST request thành công.
+- Actual result: Dashboard hiển thị `Connected`, 1.019 log trong cửa sổ thống kê, 20 dòng ở trang 1/51; `/api/logs` và `/api/logs/count` trả HTTP 200.
+- Status: Pass
+- Notes: Console chỉ có lỗi không ảnh hưởng chức năng: `GET /favicon.ico` trả 404.
+
+- Feature: Static/build checks
+- Command or scenario:
+  ```bash
+  docker compose config --quiet
+  node --check services/demo-node/index.js
+  bash -n scripts/trigger-error-spike.sh
+  cd api-server && GOCACHE=/tmp/log-system-go-build-cache go test ./...
+  cd services/demo-go && GOCACHE=/tmp/log-system-demo-go-cache go test ./...
+  ```
+- Expected result: config hợp lệ; JavaScript/shell hợp lệ; hai Go module compile và test pass.
+- Actual result: Tất cả lệnh pass. API có 5 test cho alert config; các package còn lại không có test file. Demo Go không có test file.
+- Status: Pass
+- Notes: Automated coverage còn mỏng; E2E evidence là bằng chứng chính cho logs query, pipeline và WebSocket alert.
+
+## Khoảng trống bằng chứng còn lại
+
+| Khoảng trống | Mức độ với MVP | Hành động |
+|---|---|---|
+| Clean-clone từ checkout độc lập | Bắt buộc trước bảo vệ | Chạy README flow, ghi thời gian và blocker môi trường |
+| Screenshot dashboard bình thường | Bắt buộc cho slide/report | Chụp ở viewport rõ bảng và stats |
+| Screenshot filter ERROR | Bắt buộc cho slide/report | Chụp sau khi áp dụng filter |
+| Screenshot alert banner | Bắt buộc cho slide/demo backup | Trigger incident khi cooldown đã hết rồi chụp banner |
+| Unit test logs query, cooldown/dedup, WebSocket | Nên có, không chặn MVP | Bổ sung sau khi hoàn tất report/slide nếu còn thời gian |
+| Load/stress benchmark | Ngoài phạm vi MVP | Chỉ đề xuất ở hướng phát triển, không suy diễn từ số `curl` |

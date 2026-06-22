@@ -86,10 +86,10 @@ http://localhost:8080
 
 ## Kế hoạch triển khai 4 tuần
 
-> Trạng thái hiện tại: các phần Infrastructure, Pipeline, Demo services, Go API,
-> Alerting Engine và Dashboard đã có trong repo. Giai đoạn tiếp theo không thêm
-> scope lớn; tập trung chạy Bước 10 end-to-end test, điền số liệu thật vào docs,
-> chuẩn bị bảo vệ và chỉ thêm kịch bản incident nhỏ nếu cần demo alert chủ động.
+> Trạng thái hiện tại: Infrastructure, Pipeline, Demo services, Go API,
+> Alerting Engine, Dashboard và incident replay đã hoàn thành và có bằng chứng
+> E2E. Giai đoạn hiện tại đóng băng scope ứng dụng, tập trung clean-clone,
+> screenshot, báo cáo, slide và rehearsal.
 > Roadmap chi tiết xem `docs/project-roadmap.md`; roadmap học/verify/bảo vệ 1 tháng cuối xem
 > [`docs/one-month-defense-roadmap.md`](one-month-defense-roadmap.md).
 
@@ -97,7 +97,8 @@ http://localhost:8080
 
 **Mục tiêu:** Pipeline chạy end-to-end, log vào được ES.
 
-**Trạng thái:** Hoàn thành, cần ghi lại output verify mới nhất sau Bước 10.
+**Trạng thái:** Hoàn thành và đã verify E2E; output lưu tại
+[`testing-evidence.md`](testing-evidence.md).
 
 **Tasks:**
 - Hoàn thiện `docker-compose.yml`
@@ -118,8 +119,8 @@ curl -u elastic:${ES_PASSWORD:-changeme123} "http://localhost:9200/logs-*/_count
 
 **Mục tiêu:** Có thể query và filter log qua REST API.
 
-**Trạng thái:** Hoàn thành, cần verify runtime bằng các lệnh filter API trong
-`docs/project-roadmap.md`.
+**Trạng thái:** Hoàn thành và đã verify runtime với filter level, service, count
+và response shape chuẩn.
 
 **Tasks:**
 - `main.go` — khởi tạo gin, ES client, routes
@@ -143,8 +144,9 @@ time curl "http://localhost:8080/api/logs?size=100" -o /dev/null
 
 **Mục tiêu:** Alert banner xuất hiện khi hệ thống có spike ERROR.
 
-**Trạng thái:** Hoàn thành về code, cần rebuild/start `api-server` và verify
-dashboard + WebSocket alert trong Bước 10.1-10.3.
+**Trạng thái:** Hoàn thành và đã verify. Dashboard kết nối WebSocket, incident
+replay được ingest và API server ghi nhận alert sent. Screenshot banner vẫn cần
+chụp để dùng trong slide.
 
 **Tasks:**
 - `alerting/engine.go` — Sliding Window + Deduplication
@@ -156,9 +158,9 @@ dashboard + WebSocket alert trong Bước 10.1-10.3.
 
 Kịch bản test: tăng tốc sinh ERROR trong demo service → đo thời gian đến khi banner xuất hiện.
 
-```
-Kết quả kỳ vọng: banner xuất hiện trong khoảng ALERT_CHECK_INTERVAL_SECONDS giây
-Kết quả thực tế: đo và ghi vào tài liệu sau khi hoàn thành
+```text
+Kết quả 2026-06-17: 20 incident ERROR được ingest; alert sent quan sát sau ~33s.
+Nguyên nhân lớn hơn check interval: alert trước đó vẫn còn trong cooldown 60s.
 ```
 
 ---
@@ -167,8 +169,8 @@ Kết quả thực tế: đo và ghi vào tài liệu sau khi hoàn thành
 
 **Mục tiêu:** Hệ thống chạy ổn định, tài liệu đầy đủ, demo được.
 
-**Trạng thái:** Đang làm. Cần điền số liệu thật, chuẩn bị demo script 5 phút và
-test clone sạch trước khi bảo vệ.
+**Trạng thái:** Đang đóng gói. Số liệu thật và demo script đã có; còn test clone
+sạch, screenshot, slide và rehearsal trước khi bảo vệ.
 
 **Tasks:**
 - Đo và ghi nhận số liệu hiệu năng thực tế vào tài liệu
@@ -192,26 +194,32 @@ docker compose up -d
 
 ## Số liệu hiệu năng
 
-> **Lưu ý:** Các con số dưới đây sẽ được cập nhật sau khi đo thực tế
-> trên môi trường phát triển (WSL2, 16GB RAM, SSD).
-> Kết quả có thể thay đổi tùy cấu hình môi trường.
+> **Lưu ý:** Các con số dưới đây được đo bằng request `curl` đơn lẻ trên môi
+> trường dev ngày 2026-06-17. Đây không phải benchmark tải nặng hoặc SLA.
 
 | Metric | Cơ chế đảm bảo | Kết quả đo thực tế |
 |---|---|---|
 | Query response time | ES inverted index + index theo ngày | 2026-06-17: `/api/logs?size=100` trả HTTP 200 trong `0.033992s`; `/api/health` trả HTTP 200 trong `0.007250s` |
 | Dashboard load time | Pagination 20 record/trang | 2026-06-17: dashboard `/` trả HTTP 200 trong `0.012889s` |
 | Alert detection latency | Check interval = `ALERT_CHECK_INTERVAL_SECONDS` | 2026-06-17: incident replay được ingest (`total: 20`); alert sent quan sát sau ~33s vì cooldown trước đó còn active |
-| Log durability | Filebeat registry | Không mất log khi restart |
+| Log durability | Filebeat registry | Có cơ chế resume offset; chưa có phép thử restart định lượng riêng |
 
-### Lệnh đo cần chạy ở Bước 10
+### Lệnh tái đo khi cần cập nhật báo cáo
 
 ```bash
 time curl -s "http://localhost:8080/api/logs?size=100" -o /dev/null
 time curl -s "http://localhost:8080/api/health" -o /dev/null
 ```
 
-Sau khi có kết quả, ghi số `real` vào bảng trên và lưu output chi tiết trong
-`docs/testing-evidence.md`.
+Khi tái đo trên máy khác, ghi rõ ngày, cấu hình môi trường và lưu output chi tiết
+trong `docs/testing-evidence.md`.
+
+## Việc triển khai còn mở trước bảo vệ
+
+- Chạy flow từ một clean clone độc lập và ghi tổng thời gian đến khi dashboard có data.
+- Chụp dashboard bình thường, trạng thái filter ERROR và alert banner.
+- Rehearse incident replay sau khi cooldown cũ đã hết để demo không bị trễ bất ngờ.
+- CORS và WebSocket origin hiện mở cho local demo; không expose stack trực tiếp ra Internet.
 
 ---
 

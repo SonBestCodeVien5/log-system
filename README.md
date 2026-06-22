@@ -465,3 +465,5 @@ docker compose up -d
 - [`docs/deployment.md`](docs/deployment.md) - hướng dẫn cài đặt, triển khai, vận hành chi tiết
 - [`docs/testing-evidence.md`](docs/testing-evidence.md) - lệnh kiểm thử và bằng chứng xác minh
 - [`docs/decisions.md`](docs/decisions.md) - quyết định kỹ thuật và lý do lựa chọn
+- [`docs/report-notes.md`](docs/report-notes.md) - nội dung báo cáo MVP và demo script
+- [`docs/slide-outline.md`](docs/slide-outline.md) - outline slide bảo vệ 10 trang

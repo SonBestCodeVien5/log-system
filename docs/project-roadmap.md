@@ -1,10 +1,8 @@
 # Roadmap hiện tại
 
-Tài liệu này phản ánh trạng thái repo sau commit `0ceef5f`
-(`feat: add dashboard and deployment guide`). Mục tiêu hiện tại là không thêm
-scope lớn, ưu tiên xác minh end-to-end, ghi bằng chứng, hoàn thiện tài liệu và
-chuẩn bị bảo vệ. Nếu thêm code, chỉ nên là một kịch bản incident nhỏ để chủ động
-trigger alert khi demo.
+Tài liệu này phản ánh trạng thái MVP sau khi luồng E2E và incident replay đã được
+xác minh. Mục tiêu hiện tại là đóng băng scope ứng dụng, hoàn thiện clean-clone,
+screenshot, báo cáo, slide và rehearsal bảo vệ.
 
 Roadmap chi tiết cho 1 tháng trước báo cáo/bảo vệ nằm ở
 [`docs/one-month-defense-roadmap.md`](one-month-defense-roadmap.md).
@@ -17,11 +15,12 @@ Roadmap chi tiết cho 1 tháng trước báo cáo/bảo vệ nằm ở
 | Pipeline | Hoàn thành | JSON Lines -> Logstash parse/enrich -> `logs-*` |
 | Demo services | Hoàn thành | Node.js + Go sinh log liên tục vào `./logs` |
 | Go API | Hoàn thành | REST API, WebSocket, alerting engine |
-| Dashboard | Hoàn thành, cần verify runtime | Log viewer, filter, pagination, stats, alert banner |
-| Docs | Đang hoàn thiện | README đã có hướng dẫn triển khai; còn số liệu thực tế |
-| Bảo vệ | Chưa làm | Cần demo script, câu trả lời, test clone sạch |
+| Dashboard | Hoàn thành, đã verify runtime | Log viewer, filter, pagination, stats, WebSocket connected |
+| Evidence | Hoàn thành phần E2E | Có output API, incident replay, alert sent và response time |
+| Docs | Đang đóng gói | Cần đồng bộ trạng thái và thêm screenshot |
+| Bảo vệ | Đang chuẩn bị | Demo script đã có; còn slide, Q&A, rehearsal và clean clone |
 
-## Bước 10 - End-to-end test
+## Bước 10 - End-to-end test — đã hoàn thành
 
 Mục tiêu: xác nhận toàn bộ luồng từ demo services đến dashboard và alerting
 hoạt động đúng trên môi trường Docker Compose.
@@ -95,17 +94,14 @@ time curl -s "http://localhost:8080/api/health" -o /dev/null
 Ghi lại kết quả vào `docs/testing-evidence.md` và bảng hiệu năng trong
 `docs/deployment.md`.
 
-### 10.5 Git sau khi verify
+### 10.5 Nơi lưu bằng chứng
 
-Nếu Bước 10 pass, commit phần tài liệu bằng message riêng, ví dụ:
+Output chi tiết, ngày chạy và giới hạn diễn giải được lưu trong
+[`docs/testing-evidence.md`](testing-evidence.md). Số đo dùng cho báo cáo được
+tóm tắt tại [`docs/deployment.md`](deployment.md) và
+[`docs/report-notes.md`](report-notes.md).
 
-```bash
-git add docs/project-roadmap.md docs/testing-evidence.md docs/deployment.md docs/architecture.md
-git commit -m "docs: record end-to-end verification plan"
-git push
-```
-
-## Bước 11 - Hoàn thiện docs
+## Bước 11 - Hoàn thiện docs — đang thực hiện
 
 Mục tiêu: biến repo thành tài liệu có thể clone và chạy được ngay.
 
@@ -114,10 +110,11 @@ Checklist chi tiết theo tuần nằm ở
 
 Việc cần làm:
 
-- Điền số liệu thực tế từ Bước 10.4 vào `docs/deployment.md`.
-- Ghi output quan trọng từ Bước 10.1-10.3 vào `docs/testing-evidence.md`.
-- Cập nhật `docs/report-notes.md` bằng kịch bản demo và ảnh chụp màn hình.
-- Đảm bảo README root vẫn chạy được theo flow clone -> copy `.env` -> compose up.
+- [x] Điền số liệu thực tế từ Bước 10.4 vào `docs/deployment.md`.
+- [x] Ghi output quan trọng từ Bước 10.1-10.3 vào `docs/testing-evidence.md`.
+- [x] Viết kịch bản demo và nội dung báo cáo trong `docs/report-notes.md`.
+- [ ] Chụp ba ảnh: dashboard thường, filter ERROR và alert banner.
+- [ ] Xác minh README bằng flow clean clone; `.env` chỉ cần khi override default.
 
 Acceptance:
 
@@ -155,8 +152,8 @@ Kết quả tốt nhất: dashboard mở được trong dưới 5 phút và có 
 
 ## Thứ tự ưu tiên tiếp theo
 
-1. Chạy Bước 10.1-10.3 để xác nhận dashboard/API/alerting.
-2. Chạy Bước 10.4 để lấy số liệu thật.
-3. Điền số liệu và output vào docs.
-4. Commit riêng phần docs verification.
-5. Test clone sạch trước buổi bảo vệ.
+1. Test clean clone và ghi thời gian.
+2. Chụp dashboard thường, filter ERROR và alert banner.
+3. Chuyển outline 10 slide thành deck theo template của trường.
+4. Rehearse demo 5 phút và Q&A ít nhất ba lần.
+5. Review docs lần cuối, commit/tag bản MVP.

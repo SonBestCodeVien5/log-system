@@ -432,16 +432,18 @@ Các ý cần nhấn:
 
 ## Checklist cuối cùng trước ngày bảo vệ
 
-- [ ] `docker compose up -d` chạy sạch.
-- [ ] `curl http://localhost:8080/api/health` trả OK.
-- [ ] Dashboard mở được.
-- [ ] Log table có data.
-- [ ] Filter `ERROR` hoạt động.
-- [ ] Filter `demo-node` hoạt động.
-- [ ] `/api/logs/count` trả count theo level.
-- [ ] Incident replay trigger được ERROR spike.
-- [ ] Alert banner xuất hiện hoặc API log ghi alert sent.
-- [ ] `docs/testing-evidence.md` có output thật.
+- [x] `docker compose up -d` chạy sạch trên working environment.
+- [x] `curl http://localhost:8080/api/health` trả OK.
+- [x] Dashboard mở được.
+- [x] Log table có data.
+- [x] Filter `ERROR` hoạt động.
+- [x] Filter `demo-node` hoạt động.
+- [x] `/api/logs/count` trả count theo level.
+- [x] Incident replay trigger được ERROR spike.
+- [x] API log ghi alert sent; screenshot banner vẫn cần chụp.
+- [x] `docs/testing-evidence.md` có output thật.
+- [ ] Flow clean clone độc lập đã pass và có thời gian.
+- [ ] Có đủ ba screenshot cho report/slide.
 - [ ] Slide có kiến trúc, demo, evidence, hạn chế.
 - [ ] Bạn giải thích được 10 câu hỏi ở tuần 2.
 - [ ] Không còn thêm feature mới trong 48 giờ cuối.

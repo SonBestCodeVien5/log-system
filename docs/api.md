@@ -26,11 +26,15 @@ Lấy danh sách log, hỗ trợ filter và phân trang.
 |---|---|---|---|
 | `level` | string | Lọc theo level | `ERROR`, `WARN`, `INFO` |
 | `app` | string | Lọc theo service | `demo-node` |
-| `from` | ISO8601 | Thời gian bắt đầu | `2024-01-15T10:00:00Z` |
-| `to` | ISO8601 | Thời gian kết thúc | `2024-01-15T11:00:00Z` |
+| `from` | date math hoặc ISO8601 | Thời gian bắt đầu, mặc định `now-1h` | `now-5m` |
+| `to` | date math hoặc ISO8601 | Thời gian kết thúc, mặc định `now` | `now` |
 | `q` | string | Full-text search trong message | `payment+timeout` |
-| `page` | int | Số trang, bắt đầu từ 1 | `1` |
-| `size` | int | Số record mỗi trang, mặc định 20 | `20` |
+| `page` | int | Số trang, bắt đầu từ 1; giá trị nhỏ hơn 1 được đưa về 1 | `1` |
+| `size` | int | Số record mỗi trang, mặc định 20, tối đa 100 | `20` |
+
+Kết quả được sort theo `@timestamp desc`. `level` và `app` dùng exact match;
+`q` dùng full-text match trên `log_message`. `size` ngoài khoảng 1–100 được đưa
+về mặc định 20.
 
 **Response:**
 ```json
@@ -67,7 +71,8 @@ curl "http://localhost:8080/api/logs?from=2024-01-15T10:00:00Z&to=2024-01-15T11:
 ### GET /api/logs/count
 Đếm log theo level trong khoảng thời gian.
 
-**Query parameters:** `from`, `to`, `app` (tương tự /api/logs)
+**Query parameters:** `from`, `to`, `app` (tương tự `/api/logs`). Mặc định đếm
+trong một giờ gần nhất.
 
 **Response:**
 ```json
@@ -75,7 +80,9 @@ curl "http://localhost:8080/api/logs?from=2024-01-15T10:00:00Z&to=2024-01-15T11:
   "INFO":  1240,
   "WARN":  87,
   "ERROR": 23,
-  "total": 1350
+  "total": 1350,
+  "from": "now-1h",
+  "to": "now"
 }
 ```
 
@@ -117,6 +124,9 @@ Các field nếu được gửi phải là số nguyên `>= 1`; body rỗng `{}`
 
 ### WebSocket /ws/alerts
 Nhận alert real-time khi ERROR rate vượt ngưỡng.
+
+Endpoint hiện cho phép mọi origin để phục vụ môi trường demo local. Khi triển
+khai public phải thay bằng allowlist origin và cấu hình CORS tương ứng.
 
 **Kết nối:**
 ```js
@@ -170,3 +180,10 @@ Tất cả lỗi trả về cùng format:
 | 400 | Request không hợp lệ |
 | 500 | Lỗi server hoặc Elasticsearch |
 | 503 | Elasticsearch chưa kết nối được ở `/api/health` |
+
+## Trạng thái xác minh MVP
+
+Các contract chính đã được kiểm tra E2E ngày 2026-06-17: filter level, filter
+service, count theo level, partial alert config và incident replay. Lần kiểm tra
+dashboard ngày 2026-06-22 tiếp tục ghi nhận các request logs/count trả HTTP 200.
+Chi tiết nằm trong [`testing-evidence.md`](testing-evidence.md).
